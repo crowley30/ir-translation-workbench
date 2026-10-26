@@ -353,9 +353,11 @@ export default function App() {
             navigate(null);
           }}
         >
-          <span className="brand-mark">橙</span>
+          <span className="brand-mark" aria-hidden="true">
+            IR
+          </span>
           <span>
-            橙译<small>IR WORKBENCH</small>
+            IR 翻译工作台<small>IR Translation Workbench</small>
           </span>
         </a>
         <button className="new-task" onClick={() => navigate(null)}>
@@ -398,9 +400,11 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <span className="avatar">橙</span>
+          <span className="avatar" aria-hidden="true">
+            IR
+          </span>
           <div>
-            橙橙的工作台<small>单人 · 本地持久化</small>
+            本地工作区<small>单人 · 本地持久化</small>
           </div>
           <span className="online-dot" />
         </div>
@@ -835,7 +839,7 @@ export default function App() {
           )}
         </main>
         <footer className="main-footer">
-          <span>橙译 · 为清晰沟通而做</span>
+          <span>IR 翻译工作台 · 为清晰沟通而做</span>
           <span>AI 和具身智能 · IR</span>
         </footer>
       </div>

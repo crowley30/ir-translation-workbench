@@ -1,4 +1,4 @@
-# 橙橙的 IR 翻译工作台
+# IR 翻译工作台
 
 面向科技基金 IR 的单人中文网页工具，桌面优先。支持英文粘贴，以及有边界的 DOCX 上传预检查、逐段审阅、人工编辑保存和中文/中英双语 DOCX 基础导出。
 
@@ -90,5 +90,6 @@ Playwright 优先使用系统 `/usr/bin/chromium`，否则先运行 `npx playwri
 - [P2 实际执行记录](docs/p2-verification.md)
 - [P0/P1 记录](docs/verification.md)
 - [总体 V1 计划](docs/v1-plan.md)
+- [中性产品名修正与当前界面证据](docs/neutral-name-verification.md)
 
 仓库的样本、截图及渲染均为合成内容，禁止加入真实邮件、基金材料或凭据。旧的一句话 Codex skill 按用户要求未用作规范。
