@@ -61,6 +61,11 @@ test('input bounds, explicit simulation label, save/reopen and text export', asy
   context,
 }, testInfo) => {
   await page.goto('/');
+  await expect(page).toHaveTitle('IR 翻译工作台');
+  await expect(page.locator('.brand')).toContainText('IR 翻译工作台');
+  await expect(page.locator('.brand small')).toHaveText('IR Translation Workbench');
+  await expect(page.locator('.brand-mark')).toHaveText('IR');
+  await expect(page.locator('.sidebar-footer')).toContainText('本地工作区');
   await expect(page.getByText('模拟模式', { exact: false }).first()).toBeVisible();
   const create = page.getByRole('button', { name: '创建并翻译', exact: true });
   await expect(create).toBeDisabled();

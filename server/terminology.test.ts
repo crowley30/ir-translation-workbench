@@ -57,7 +57,7 @@ describe('bounded terminology validation', () => {
     });
     const result = validateTermInput({
       layer: 'project',
-      project: ' Orange ',
+      project: ' Demo Project ',
       source: 'business   model',
       target: ' 商业模式 ',
       note: 'manual\napplicability',
@@ -67,7 +67,7 @@ describe('bounded terminology validation', () => {
       alternatives: [' 业务模式 ', '业务模式'],
     });
     expect(result).toMatchObject({
-      project: 'Orange',
+      project: 'Demo Project',
       source: 'business model',
       note: 'manual\napplicability',
       priority: 0,
@@ -270,9 +270,9 @@ describe('literal whole-token matching and deterministic precedence', () => {
       [
         term('project', {
           layer: 'project',
-          project: 'Orange',
+          project: 'Demo Project',
           priority: 0,
-          target: '橙橙项目术语',
+          target: '示例项目术语',
         }),
         term('fund', { layer: 'fund', priority: 100, target: '基金术语' }),
         term('technical', { priority: 100, target: '技术术语' }),
@@ -283,14 +283,14 @@ describe('literal whole-token matching and deterministic precedence', () => {
           target: '其它项目',
         }),
       ],
-      'Orange',
+      'Demo Project',
     );
     const result = resolveTerms(state, 'AI is here.');
     expect(result.conflicts).toEqual([]);
     expect(result.matches).toHaveLength(1);
     expect(result.matches[0]).toMatchObject({
       text: 'AI',
-      entry: { id: 'project', target: '橙橙项目术语' },
+      entry: { id: 'project', target: '示例项目术语' },
       overriddenIds: ['fund', 'technical'],
     });
   });
@@ -439,7 +439,7 @@ describe('literal whole-token matching and deterministic precedence', () => {
     expect(result.matches[0].entry).toMatchObject({ target: '', retainSource: true });
   });
   it('returns no guidance for disabled or other-project entries in a restored snapshot', () => {
-    const valid = snapshot([], 'Orange');
+    const valid = snapshot([], 'Demo Project');
     const restored = {
       ...valid,
       entries: [

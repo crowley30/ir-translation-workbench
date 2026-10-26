@@ -14,7 +14,7 @@ const port = Number(process.env.PORT || 3001);
 const app = createApp(service, process.env.APP_ORIGIN || `http://127.0.0.1:${port}`);
 const server = app.listen(port, '127.0.0.1', () => {
   console.info(
-    `IR 工作台已启动：http://127.0.0.1:${port}（${adapter.mode === 'mock' ? '模拟模式，不产出真实译文' : '真实服务模式'}）`,
+    `IR 翻译工作台已启动：http://127.0.0.1:${port}（${adapter.mode === 'mock' ? '模拟模式，不产出真实译文' : '真实服务模式'}）`,
   );
 });
 let closing = false;
