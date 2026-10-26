@@ -34,8 +34,12 @@ export default function App() {
   const [scenario, setScenario] = useState<MockScenario>('normal');
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [error, setError] = useState('');
+  const [connectionErrors, setConnectionErrors] = useState<{ config?: string; tasks?: string }>({});
+  const [taskReadError, setTaskReadError] = useState('');
   const [notice, setNotice] = useState('');
   const [posting, setPosting] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const latestConfig = useRef<ServiceConfig | null>(null);
   const [loading, setLoading] = useState(!!selectedId);
   const currentId = useRef(selectedId);
   const actionLock = useRef(false);
@@ -62,22 +66,29 @@ export default function App() {
     async (id: string) => {
       const data = await api<Task>(`/tasks/${id}`);
       acceptTask(data);
+      if (currentId.current === id) setTaskReadError('');
     },
     [acceptTask],
   );
   useEffect(() => {
     let disposed = false;
+    let refreshVersion = 0;
     const refresh = async () => {
+      const version = ++refreshVersion;
       const results = await Promise.allSettled([api<ServiceConfig>('/config'), refreshList()]);
-      if (disposed) return;
-      if (results[0].status === 'fulfilled') setConfig(results[0].value);
-      const failed = results.find((result) => result.status === 'rejected');
-      if (failed?.status === 'rejected')
-        setError(failed.reason instanceof Error ? failed.reason.message : '无法连接服务，请重试。');
-      else
-        setError((previous) =>
-          previous === '无法连接服务，请检查服务状态后重试。' ? '' : previous,
-        );
+      if (disposed || version !== refreshVersion) return;
+      if (results[0].status === 'fulfilled') {
+        latestConfig.current = results[0].value;
+        setConfig(results[0].value);
+      }
+      const message = (result: PromiseSettledResult<unknown>) =>
+        result.status === 'rejected'
+          ? result.reason instanceof Error
+            ? result.reason.message
+            : '无法连接服务，请重试。'
+          : undefined;
+      // Background recovery only clears the error for its own source, never a user action failure.
+      setConnectionErrors({ config: message(results[0]), tasks: message(results[1]) });
     };
     void refresh();
     const timer = setInterval(() => void refresh(), 1500);
@@ -94,10 +105,14 @@ export default function App() {
     }
     setLoading(true);
     refreshTask(selectedId)
-      .catch((e) => setError(e.message))
+      .catch((e) => {
+        if (currentId.current === selectedId) setTaskReadError(e.message);
+      })
       .finally(() => setLoading(false));
     const timer = setInterval(() => {
-      refreshTask(selectedId).catch((e) => setError(e.message));
+      refreshTask(selectedId).catch((e) => {
+        if (currentId.current === selectedId) setTaskReadError(e.message);
+      });
     }, 700);
     return () => clearInterval(timer);
   }, [selectedId, refreshTask]);
@@ -105,6 +120,7 @@ export default function App() {
     const pop = () => {
       setSelectedId(taskFromUrl());
       setTask(null);
+      setTaskReadError('');
       setError('');
     };
     window.addEventListener('popstate', pop);
@@ -129,6 +145,7 @@ export default function App() {
     currentId.current = id;
     setSelectedId(id);
     setTask(null);
+    setTaskReadError('');
     setError('');
     setNotice('');
   }
@@ -140,7 +157,16 @@ export default function App() {
     setNotice('');
     try {
       await work();
-      await refreshList();
+      // A successful mutation stays successful even if its follow-up list refresh fails.
+      try {
+        await refreshList();
+        setConnectionErrors((previous) => ({ ...previous, tasks: undefined }));
+      } catch (e) {
+        setConnectionErrors((previous) => ({
+          ...previous,
+          tasks: e instanceof Error ? e.message : '无法读取任务列表，请重试。',
+        }));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : '操作失败，请重试。');
     } finally {
@@ -153,21 +179,27 @@ export default function App() {
     input.length > (config?.maxCharacters ?? MAX_CHARACTERS) ||
     paragraphCount > (config?.maxParagraphs ?? MAX_PARAGRAPHS);
   function createTask() {
+    if (actionLock.current || !config?.ready || !input.trim() || overLimit) return;
+    const submitted = { text: input, style, scenario, mode: config.mode };
+    setCreating(true);
     void action(async () => {
-      if (!input.trim() || overLimit) return;
       const created = await api<Task>('/tasks', {
         method: 'POST',
-        body: JSON.stringify({ text: input, style }),
+        body: JSON.stringify({ text: submitted.text, style: submitted.style }),
       });
+      if (created.mode !== submitted.mode || latestConfig.current?.mode !== submitted.mode) {
+        setNotice('服务模式已变化，原文草稿已保留；已创建的任务可从列表打开，请确认模式后再继续。');
+        return;
+      }
       navigate(created.id);
       setTask(created);
-      setInput('');
+      setInput((current) => (current === submitted.text ? '' : current));
       const started = await api<Task>(`/tasks/${created.id}/translate`, {
         method: 'POST',
-        body: JSON.stringify({ scenario }),
+        body: JSON.stringify({ scenario: submitted.scenario }),
       });
       acceptTask(started);
-    });
+    }).finally(() => setCreating(false));
   }
   function translate(paragraphId?: string) {
     if (!task) return;
@@ -344,6 +376,27 @@ export default function App() {
               </p>
             </div>
           </div>
+          {Object.entries(connectionErrors).map(
+            ([source, message]) =>
+              message && (
+                <div role="alert" className="alert" key={source}>
+                  {message}
+                  <button
+                    aria-label={source === 'config' ? '关闭配置错误提示' : '关闭任务列表错误提示'}
+                    onClick={() =>
+                      setConnectionErrors((previous) => ({ ...previous, [source]: undefined }))
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ),
+          )}
+          {taskReadError && (
+            <div role="alert" className="alert">
+              {taskReadError}
+            </div>
+          )}
           {error && (
             <div role="alert" className="alert">
               {error}
@@ -364,7 +417,9 @@ export default function App() {
               任务暂时无法打开。
               <button
                 onClick={() => {
-                  void refreshTask(selectedId).catch((e) => setError(e.message));
+                  void refreshTask(selectedId).catch((e) => {
+                    if (currentId.current === selectedId) setTaskReadError(e.message);
+                  });
                 }}
               >
                 重新加载
@@ -538,7 +593,10 @@ export default function App() {
                   id="source-input"
                   className="source-input"
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  disabled={creating}
+                  onChange={(e) => {
+                    if (!creating) setInput(e.target.value);
+                  }}
                   placeholder={
                     'Dear team,\n\nPaste your English text here…\n\n在这里粘贴英文，开始逐段翻译与审校。'
                   }
@@ -552,6 +610,11 @@ export default function App() {
                     {(config?.maxCharacters ?? MAX_CHARACTERS).toLocaleString()} 字符
                   </span>
                 </div>
+                {creating && (
+                  <p className="field-help" role="status">
+                    正在创建任务，原文和选项暂时锁定；创建失败会保留原文。
+                  </p>
+                )}
                 {overLimit && (
                   <p role="alert" className="field-error">
                     内容超出上限，请缩短文本后再试。
@@ -564,7 +627,10 @@ export default function App() {
                       id="style"
                       aria-label="文体"
                       value={style}
-                      onChange={(e) => setStyle(e.target.value as Style)}
+                      disabled={creating}
+                      onChange={(e) => {
+                        if (!creating) setStyle(e.target.value as Style);
+                      }}
                     >
                       <option value="business">商务文体</option>
                       <option value="faithful">忠实合同</option>
@@ -575,7 +641,7 @@ export default function App() {
                     disabled={!input.trim() || overLimit || posting || !config?.ready}
                     onClick={createTask}
                   >
-                    {posting ? '正在创建…' : '创建并翻译'} <span aria-hidden="true">↗</span>
+                    {creating ? '正在创建…' : '创建并翻译'} <span aria-hidden="true">↗</span>
                   </button>
                 </div>
               </div>
@@ -608,7 +674,10 @@ export default function App() {
                 id="scenario"
                 aria-label="模拟场景"
                 value={scenario}
-                onChange={(e) => setScenario(e.target.value as MockScenario)}
+                disabled={creating}
+                onChange={(e) => {
+                  if (!creating) setScenario(e.target.value as MockScenario);
+                }}
               >
                 {SCENARIOS.map(([value, label]) => (
                   <option key={value} value={value}>

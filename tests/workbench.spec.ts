@@ -221,12 +221,35 @@ test('a model response arriving before save requires acknowledgment before repla
     .toBe('翻译响应到达前开始的人工草稿。');
 });
 
-test('two immediate create clicks result in one persisted task', async ({ page, request }) => {
+test('a delayed create freezes the submitted snapshot and ignores repeated clicks', async ({
+  page,
+  request,
+}, testInfo) => {
   await page.goto('/');
-  await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+  const input = page.getByLabel('输入英文', { exact: true });
+  const style = page.getByLabel('文体', { exact: true });
+  await input.fill(synthetic);
+  await style.selectOption('faithful');
+  await chooseScenario(page, 'normal');
+  const scenario = page.getByLabel('模拟场景', { exact: true });
   let createRequests = 0;
-  page.on('request', (req) => {
-    if (req.method() === 'POST' && new URL(req.url()).pathname === '/api/tasks') createRequests++;
+  let submitted: { text: string; style: string } | undefined;
+  let committed!: () => void;
+  let release!: () => void;
+  const committedPromise = new Promise<void>((resolve) => {
+    committed = resolve;
+  });
+  const holdResponse = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/tasks', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    createRequests++;
+    submitted = route.request().postDataJSON() as { text: string; style: string };
+    const response = await route.fetch();
+    committed();
+    await holdResponse;
+    await route.fulfill({ response });
   });
   const button = page.getByRole('button', { name: '创建并翻译', exact: true });
   await expect(button).toBeEnabled();
@@ -234,29 +257,269 @@ test('two immediate create clicks result in one persisted task', async ({ page, 
     element.click();
     element.click();
   });
+  await committedPromise;
+  await expect(input).toBeDisabled();
+  await expect(style).toBeDisabled();
+  await expect(scenario).toBeDisabled();
+  await expect(page.getByRole('button', { name: '正在创建…', exact: true })).toBeDisabled();
+  // A native keyboard attempt cannot alter a disabled field while the POST response is pending.
+  await input.click({ force: true });
+  await page.keyboard.type('UNSAVED_NEW_CONTENT');
+  await expect(input).toHaveValue(synthetic);
+  expect(submitted).toEqual({ text: synthetic, style: 'faithful' });
+  expect(createRequests).toBe(1);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.screenshot({
+    path: testInfo.outputPath('synthetic-create-pending.png'),
+    fullPage: true,
+  });
+  release();
   const id = await currentId(page);
-  expect((await waitStopped(request, id)).status).toBe('completed');
+  const saved = await waitStopped(request, id);
+  expect(saved.status).toBe('completed');
+  expect(saved.paragraphs.map((p) => p.source)).toEqual(synthetic.split('\n\n'));
+  expect(saved.style).toBe('faithful');
   expect(createRequests).toBe(1);
 });
 
-test('a temporary config read failure recovers without a page reload', async ({
+test('a delayed failed create retains the original input and unlocks exactly one retry', async ({
+  page,
+  request,
+}) => {
+  await page.goto('/');
+  const input = page.getByLabel('输入英文', { exact: true });
+  const style = page.getByLabel('文体', { exact: true });
+  await input.fill(synthetic);
+  await style.selectOption('faithful');
+  await chooseScenario(page, 'normal');
+  const scenario = page.getByLabel('模拟场景', { exact: true });
+  let createRequests = 0;
+  let entered!: () => void;
+  let release!: () => void;
+  const enteredPromise = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const holdResponse = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  page.on('request', (req) => {
+    if (req.method() === 'POST' && new URL(req.url()).pathname === '/api/tasks') createRequests++;
+  });
+  let failNextCreate = true;
+  await page.route('**/api/tasks', async (route) => {
+    if (route.request().method() !== 'POST' || !failNextCreate) return route.continue();
+    failNextCreate = false;
+    entered();
+    await holdResponse;
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: '合成创建失败，请重试。' }),
+    });
+  });
+  const button = page.getByRole('button', { name: '创建并翻译', exact: true });
+  await expect(button).toBeEnabled();
+  await button.evaluate((element: HTMLButtonElement) => {
+    element.click();
+    element.click();
+  });
+  await enteredPromise;
+  await expect(input).toBeDisabled();
+  await expect(style).toBeDisabled();
+  await expect(scenario).toBeDisabled();
+  await input.click({ force: true });
+  await page.keyboard.type('UNSAVED_NEW_CONTENT');
+  await expect(input).toHaveValue(synthetic);
+  expect(createRequests).toBe(1);
+  release();
+  await expect(page.getByRole('alert').filter({ hasText: '合成创建失败，请重试。' })).toBeVisible();
+  await expect(input).toBeEnabled();
+  await expect(style).toBeEnabled();
+  await expect(scenario).toBeEnabled();
+  await expect(input).toHaveValue(synthetic);
+  await expect(style).toHaveValue('faithful');
+  await expect(scenario).toHaveValue('normal');
+  await expect(button).toBeEnabled();
+  await button.click();
+  const id = await currentId(page);
+  const saved = await waitStopped(request, id);
+  expect(saved.paragraphs.map((p) => p.source)).toEqual(synthetic.split('\n\n'));
+  expect(saved.style).toBe('faithful');
+  expect(createRequests).toBe(2);
+});
+
+test('a service mode change during create retains the original draft and does not auto-translate', async ({
+  page,
+  request,
+}) => {
+  let changedMode = false;
+  await page.route('**/api/config', async (route) => {
+    if (!changedMode) return route.continue();
+    const response = await route.fetch();
+    const config = await response.json();
+    await route.fulfill({
+      response,
+      json: { ...config, mode: 'real', ready: false, label: '合成模式切换：真实服务未配置' },
+    });
+  });
+  let committed!: () => void;
+  let release!: () => void;
+  let created!: Task;
+  const committedPromise = new Promise<void>((resolve) => {
+    committed = resolve;
+  });
+  const holdResponse = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/tasks', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const response = await route.fetch();
+    created = (await response.json()) as Task;
+    committed();
+    await holdResponse;
+    await route.fulfill({ response });
+  });
+  let translateRequests = 0;
+  page.on('request', (req) => {
+    if (
+      req.method() === 'POST' &&
+      /\/api\/tasks\/[^/]+\/translate$/.test(new URL(req.url()).pathname)
+    )
+      translateRequests++;
+  });
+  await page.goto('/');
+  const input = page.getByLabel('输入英文', { exact: true });
+  await input.fill(synthetic);
+  await page.getByRole('button', { name: '创建并翻译', exact: true }).click();
+  await committedPromise;
+  changedMode = true;
+  await expect(page.getByText('真实服务', { exact: true })).toBeVisible();
+  release();
+  await expect(
+    page.getByRole('status').filter({ hasText: '服务模式已变化，原文草稿已保留' }),
+  ).toBeVisible();
+  await expect(page).not.toHaveURL(/task=/);
+  await expect(input).toBeEnabled();
+  await expect(input).toHaveValue(synthetic);
+  await expect(page.locator(`a[href="?task=${created.id}"]`)).toBeVisible();
+  expect((await taskFromApi(request, created.id)).status).toBe('draft');
+  expect(translateRequests).toBe(0);
+});
+
+test('a temporary config read failure is visible and clears after recovery without a reload', async ({
   page,
 }, testInfo) => {
-  await page.route(
-    '**/api/config',
-    (route) =>
-      route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Synthetic transient failure' }),
-      }),
-    { times: 1 },
-  );
+  let recover = false;
+  await page.route('**/api/config', async (route) => {
+    if (recover) return route.continue();
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: '合成配置读取暂时失败。' }),
+    });
+  });
   await page.goto('/');
+  const configError = page.getByRole('alert').filter({ hasText: '合成配置读取暂时失败。' });
+  await expect(configError).toBeVisible();
   await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+  await expect(page.getByRole('button', { name: '创建并翻译', exact: true })).toBeDisabled();
+  recover = true;
   await expect(page.getByRole('button', { name: '创建并翻译', exact: true })).toBeEnabled();
+  await expect(configError).toHaveCount(0);
   await expect(page.getByText('模拟模式', { exact: false }).first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('synthetic-compose.png'), fullPage: true });
+});
+
+test('config recovery clears its own error while retaining a newer action failure', async ({
+  page,
+}) => {
+  let configFails = false;
+  await page.route('**/api/config', async (route) => {
+    if (!configFails) return route.continue();
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: '合成后台配置故障。' }),
+    });
+  });
+  await page.goto('/');
+  await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+  const button = page.getByRole('button', { name: '创建并翻译', exact: true });
+  await expect(button).toBeEnabled();
+  configFails = true;
+  const configError = page.getByRole('alert').filter({ hasText: '合成后台配置故障。' });
+  await expect(configError).toBeVisible();
+  await page.route('**/api/tasks', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: '合成创建操作失败。' }),
+    });
+  });
+  await button.click();
+  const actionError = page.getByRole('alert').filter({ hasText: '合成创建操作失败。' });
+  await expect(actionError).toBeVisible();
+  configFails = false;
+  await expect(configError).toHaveCount(0);
+  await expect(actionError).toBeVisible();
+  await expect(page.getByLabel('输入英文', { exact: true })).toHaveValue(synthetic);
+});
+
+test('a successful save keeps its notice while a list-read error appears and then clears after recovery', async ({
+  page,
+  request,
+}) => {
+  const id = await createInUi(page);
+  const initial = await waitStopped(request, id);
+  const first = page.getByLabel('译文 1', { exact: true });
+  await expect(first).toHaveValue(initial.paragraphs[0].translation);
+  let failListings = false;
+  let listRequested!: () => void;
+  let releaseFailure!: () => void;
+  const listRequestedPromise = new Promise<void>((resolve) => {
+    listRequested = resolve;
+  });
+  const holdFailure = new Promise<void>((resolve) => {
+    releaseFailure = resolve;
+  });
+  await page.route('**/api/tasks', async (route) => {
+    if (route.request().method() !== 'GET' || !failListings) return route.continue();
+    listRequested();
+    await holdFailure;
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: '合成任务列表读取失败。' }),
+    });
+  });
+  await page.route(
+    '**/api/tasks/*/paragraphs/*',
+    async (route) => {
+      const response = await route.fetch();
+      failListings = true;
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
+  await first.fill('人工保存成功，列表读取暂时失败时也不能丢失。');
+  await page.getByRole('button', { name: '保存修改', exact: true }).first().click();
+  await listRequestedPromise;
+  await expect
+    .poll(async () => (await taskFromApi(request, id)).paragraphs[0].translation)
+    .toBe('人工保存成功，列表读取暂时失败时也不能丢失。');
+  const savedNotice = page.getByRole('status').filter({ hasText: '人工修改已保存。' });
+  await expect(savedNotice).toBeVisible();
+  releaseFailure();
+  const listError = page.getByRole('alert').filter({ hasText: '合成任务列表读取失败。' });
+  await expect(listError).toBeVisible();
+  await expect(savedNotice).toBeVisible();
+  failListings = false;
+  await expect(listError).toHaveCount(0);
+  await expect(savedNotice).toBeVisible();
+  expect((await taskFromApi(request, id)).paragraphs[0].edited).toBe(true);
+  await expect(first).toHaveValue('人工保存成功，列表读取暂时失败时也不能丢失。');
 });
 
 for (const scenario of ['timeout', 'rate-limit', 'server-error', 'malformed', 'partial'] as const) {

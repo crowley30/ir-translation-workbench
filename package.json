@@ -12,11 +12,12 @@
     "start": "tsx server/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:public",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check:public": "node scripts/check-public.mjs"
+    "check:public": "node scripts/check-public.mjs",
+    "test:public": "node --test scripts/check-public.test.mjs"
   },
   "dependencies": {
     "express": "^5.1.0",

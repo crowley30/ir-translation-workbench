@@ -4,7 +4,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { TaskStore } from './store.js';
 import { ApiError, TaskService } from './service.js';
-import { createMockAdapter, ProviderError } from './adapter.js';
+import {
+  createMockAdapter,
+  createRealAdapter,
+  ProviderError,
+  safeProviderMessage,
+} from './adapter.js';
 
 const open: TaskStore[] = [];
 const services: TaskService[] = [];
@@ -271,5 +276,141 @@ describe('bounded failures and retry', () => {
       expect.objectContaining({ code: 'PROVIDER_UNAVAILABLE' }),
     );
     expect(translate).not.toHaveBeenCalled();
+  });
+});
+
+describe('real adapter completion validation at persistence boundary', () => {
+  const config = {
+    apiUrl: 'https://synthetic.example/v1/chat/completions',
+    apiKey: 'synthetic-service-placeholder',
+    model: 'synthetic-model',
+    enabled: true,
+  };
+  const content = JSON.stringify({ translation: '合成样本：不得保存的不完整结果。' });
+  const message = { role: 'assistant', content, refusal: null };
+  const choice = { index: 0, finish_reason: 'stop', message };
+  const rejected = [
+    ['truncated valid JSON', { ...choice, finish_reason: 'length' }, 'INCOMPLETE_RESPONSE'],
+    ['filtered valid JSON', { ...choice, finish_reason: 'content_filter' }, 'PROVIDER_REFUSAL'],
+    [
+      'refused valid JSON',
+      { ...choice, message: { ...message, refusal: 'synthetic refusal body' } },
+      'PROVIDER_REFUSAL',
+    ],
+    ['missing finish reason', { index: 0, message }, 'INVALID_RESPONSE'],
+    ['null finish reason', { ...choice, finish_reason: null }, 'INVALID_RESPONSE'],
+    [
+      'unknown finish reason',
+      { ...choice, finish_reason: 'synthetic_unknown' },
+      'INVALID_RESPONSE',
+    ],
+    ['tool-call completion', { ...choice, finish_reason: 'tool_calls' }, 'INVALID_RESPONSE'],
+    ['function-call completion', { ...choice, finish_reason: 'function_call' }, 'INVALID_RESPONSE'],
+    [
+      'non-assistant message',
+      { ...choice, message: { ...message, role: 'user' } },
+      'INVALID_RESPONSE',
+    ],
+    [
+      'tool-call message',
+      {
+        ...choice,
+        message: { ...message, tool_calls: [{ id: 'synthetic-call', type: 'function' }] },
+      },
+      'INVALID_RESPONSE',
+    ],
+    [
+      'function-call message',
+      {
+        ...choice,
+        message: { ...message, function_call: { name: 'synthetic_function', arguments: '{}' } },
+      },
+      'INVALID_RESPONSE',
+    ],
+    ['unsupported choice index', { ...choice, index: 1 }, 'INVALID_RESPONSE'],
+  ] as const;
+
+  describe.each([
+    ['new paragraph', false],
+    ['explicit retranslation of saved human work', true],
+  ] as const)('%s', (_label, hasPreviousTranslation) => {
+    it.each(rejected)(
+      'rejects %s without persisting success or retrying',
+      async (_name, providerChoice, code) => {
+        const fetchImpl = vi.fn(
+          async () => new Response(JSON.stringify({ choices: [providerChoice] })),
+        );
+        const s = service(createRealAdapter(config, fetchImpl), 1000);
+        const task = makeTask(s, 'Synthetic AI investment: USD 10 million.');
+        const paragraphId = task.paragraphs[0].id;
+        const before = hasPreviousTranslation
+          ? s.edit(task.id, paragraphId, {
+              translation: '合成样本：已保存的人工译文。',
+              expectedRevision: 0,
+            }).paragraphs[0]
+          : task.paragraphs[0];
+
+        s.translate(task.id, hasPreviousTranslation ? { paragraphIds: [paragraphId] } : {});
+        await s.idle(task.id);
+
+        const persisted = s.store.get(task.id)!;
+        expect(persisted.mode).toBe('real');
+        expect(persisted.status).toBe('failed');
+        expect(persisted.paragraphs[0]).toMatchObject({
+          status: 'failed',
+          translation: before.translation,
+          revision: before.revision,
+          edited: before.edited,
+          error: safeProviderMessage(code),
+        });
+        expect(persisted.paragraphs[0].translation).not.toContain('不得保存');
+        expect(persisted.paragraphs[0].error).not.toContain('synthetic refusal body');
+        expect(fetchImpl).toHaveBeenCalledTimes(1);
+      },
+    );
+  });
+
+  it('allows an explicit successful retry only after the provider reports a supported complete response', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockImplementationOnce(
+        async () =>
+          new Response(JSON.stringify({ choices: [{ ...choice, finish_reason: 'length' }] })),
+      )
+      .mockImplementationOnce(
+        async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  ...choice,
+                  message: {
+                    ...message,
+                    content: JSON.stringify({ translation: '合成样本：完整的中文译文。' }),
+                  },
+                },
+              ],
+            }),
+          ),
+      );
+    const s = service(createRealAdapter(config, fetchImpl), 1000);
+    const task = makeTask(s, 'Synthetic complete provider response.');
+    s.translate(task.id, {});
+    await s.idle(task.id);
+    expect(s.get(task.id).status).toBe('failed');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+
+    s.translate(task.id, {});
+    await s.idle(task.id);
+
+    expect(s.get(task.id).status).toBe('completed');
+    expect(s.get(task.id).paragraphs[0]).toMatchObject({
+      status: 'done',
+      translation: '合成样本：完整的中文译文。',
+      revision: 1,
+      edited: false,
+      error: null,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });

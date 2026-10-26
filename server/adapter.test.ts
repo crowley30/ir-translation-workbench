@@ -21,7 +21,13 @@ const config = {
 };
 const response = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
 const success = (translation = '合成样本：人工智能基金。') => ({
-  choices: [{ message: { content: JSON.stringify({ translation }) } }],
+  choices: [
+    {
+      index: 0,
+      finish_reason: 'stop',
+      message: { role: 'assistant', content: JSON.stringify({ translation }) },
+    },
+  ],
 });
 const signal = () => new AbortController().signal;
 
@@ -173,14 +179,33 @@ describe('real adapter configuration and safety', () => {
   it.each([
     {},
     { choices: [] },
-    { choices: [{ message: { content: 'not-json' } }] },
-    { choices: [{ message: { content: JSON.stringify({ translation: '' }) } }] },
     {
       choices: [
-        { message: { content: JSON.stringify({ translation: 'ok', extra: 'omitted paragraph' }) } },
+        { index: 0, finish_reason: 'stop', message: { role: 'assistant', content: 'not-json' } },
       ],
     },
-    { choices: [{ message: { content: JSON.stringify({ translation: 42 }) } }] },
+    success(''),
+    {
+      choices: [
+        {
+          index: 0,
+          finish_reason: 'stop',
+          message: {
+            role: 'assistant',
+            content: JSON.stringify({ translation: 'ok', extra: 'omitted paragraph' }),
+          },
+        },
+      ],
+    },
+    {
+      choices: [
+        {
+          index: 0,
+          finish_reason: 'stop',
+          message: { role: 'assistant', content: JSON.stringify({ translation: 42 }) },
+        },
+      ],
+    },
     success('x'.repeat(40001)),
   ])('rejects malformed provider output without applying a partial translation', async (body) => {
     const adapter = createRealAdapter(config, vi.fn().mockResolvedValue(response(body)));
@@ -226,5 +251,111 @@ describe('real adapter configuration and safety', () => {
       code: 'CANCELLED',
       retryable: false,
     });
+  });
+});
+
+describe('real adapter completion gate', () => {
+  const content = JSON.stringify({ translation: 'Synthetic injected result: USD 12 million.' });
+  const message = { role: 'assistant', content };
+  const choice = { index: 0, finish_reason: 'stop', message };
+  const rejected = [
+    ['valid-JSON truncated output', { ...choice, finish_reason: 'length' }, 'INCOMPLETE_RESPONSE'],
+    ['filtered completion', { ...choice, finish_reason: 'content_filter' }, 'PROVIDER_REFUSAL'],
+    [
+      'explicit refusal with valid content',
+      { ...choice, message: { ...message, refusal: 'sensitive-refusal-text' } },
+      'PROVIDER_REFUSAL',
+    ],
+    [
+      'refusal instead of content',
+      {
+        ...choice,
+        message: { role: 'assistant', content: null, refusal: 'sensitive-refusal-text' },
+      },
+      'PROVIDER_REFUSAL',
+    ],
+    [
+      'empty refusal field',
+      { ...choice, message: { ...message, refusal: '' } },
+      'PROVIDER_REFUSAL',
+    ],
+    ['missing finish reason', { index: 0, message }, 'INVALID_RESPONSE'],
+    ['null finish reason', { ...choice, finish_reason: null }, 'INVALID_RESPONSE'],
+    [
+      'unknown finish reason',
+      { ...choice, finish_reason: 'future-provider-status' },
+      'INVALID_RESPONSE',
+    ],
+    ['tool completion', { ...choice, finish_reason: 'tool_calls' }, 'INVALID_RESPONSE'],
+    [
+      'legacy function completion',
+      { ...choice, finish_reason: 'function_call' },
+      'INVALID_RESPONSE',
+    ],
+    ['missing choice index', { finish_reason: 'stop', message }, 'INVALID_RESPONSE'],
+    ['incorrect choice index', { ...choice, index: 1 }, 'INVALID_RESPONSE'],
+    ['string choice index', { ...choice, index: '0' }, 'INVALID_RESPONSE'],
+    ['missing message role', { ...choice, message: { content } }, 'INVALID_RESPONSE'],
+    ['user message role', { ...choice, message: { role: 'user', content } }, 'INVALID_RESPONSE'],
+    ['non-record message', { ...choice, message: [] }, 'INVALID_RESPONSE'],
+    [
+      'non-string content',
+      { ...choice, message: { role: 'assistant', content: [{ text: content }] } },
+      'INVALID_RESPONSE',
+    ],
+    [
+      'malformed refusal field',
+      { ...choice, message: { ...message, refusal: false } },
+      'INVALID_RESPONSE',
+    ],
+    [
+      'tool calls on stop completion',
+      { ...choice, message: { ...message, tool_calls: [{ id: 'synthetic-tool' }] } },
+      'INVALID_RESPONSE',
+    ],
+    [
+      'malformed tool call field',
+      { ...choice, message: { ...message, tool_calls: {} } },
+      'INVALID_RESPONSE',
+    ],
+    [
+      'legacy function call on stop completion',
+      { ...choice, message: { ...message, function_call: { name: 'synthetic-function' } } },
+      'INVALID_RESPONSE',
+    ],
+    ['missing message', { index: 0, finish_reason: 'stop' }, 'INVALID_RESPONSE'],
+    ['non-record choice', [], 'INVALID_RESPONSE'],
+  ] as const;
+
+  it.each(rejected)(
+    'rejects %s even if the translation JSON could be parsed',
+    async (_name, invalidChoice, code) => {
+      const fetchImpl = vi.fn().mockResolvedValue(response({ choices: [invalidChoice] }));
+      const error = await createRealAdapter(config, fetchImpl)
+        .translate(input, signal())
+        .catch((error: unknown) => error);
+      expect(error).toBeInstanceOf(ProviderError);
+      expect(error).toMatchObject({ code, retryable: false });
+      expect(String(error)).not.toContain('sensitive-refusal-text');
+      expect(String(error)).not.toContain(config.apiKey);
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('accepts supported stop completion with explicit null refusal and no active tools', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      response({
+        choices: [
+          {
+            ...choice,
+            message: { ...message, refusal: null, tool_calls: [], function_call: null },
+          },
+        ],
+      }),
+    );
+    await expect(createRealAdapter(config, fetchImpl).translate(input, signal())).resolves.toBe(
+      'Synthetic injected result: USD 12 million.',
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });

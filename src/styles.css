@@ -951,3 +951,15 @@ select {
     display: none;
   }
 }
+
+.field-help {
+  font-size: 11px;
+  color: #7b896d;
+  margin: 10px 27px;
+  line-height: 1.7;
+}
+.source-input:disabled {
+  cursor: wait;
+  color: #728069;
+  background: #f8faf4;
+}

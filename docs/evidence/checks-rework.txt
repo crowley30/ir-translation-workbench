@@ -1,0 +1,205 @@
+P0/P1 independent acceptance rework — 2026-10-26 UTC
+Baseline: 6ef1e6aa50612ead1624af6a23e638d84d355bc9 (not accepted by parent).
+All provider responses synthetic/injected; no real API, credentials, paid calls or professional translation quality validation.
+
+COMMAND: npm run lint
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 lint
+> eslint .
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run typecheck
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 typecheck
+> tsc --noEmit
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm test
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test
+> vitest run && npm run test:public
+
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+
+ Test Files  3 passed (3)
+      Tests  113 passed (113)
+   Start at  02:23:59
+   Duration  3.23s (tests 85%, import 13%, transform 2%, worker 1%)
+
+
+> ir-translation-workbench@0.1.0 test:public
+> node --test scripts/check-public.test.mjs
+
+✔ empty staged diff still scans HEAD, index and working files (287.118715ms)
+✔ rejects synthetic credential in tracked worktree when staging is empty (217.773268ms)
+✔ checks complete staged snapshots even after worktree cleanup (218.347285ms)
+✔ checks nonignored untracked intended files and runtime artifacts (211.072625ms)
+✔ base range scans intermediate committed blobs removed before HEAD (319.612708ms)
+✔ client build still requires separation from provider config and credentials (149.892794ms)
+✔ missing build or invalid base never reports success (223.850667ms)
+✔ refuses success when the repository scan scope is empty (154.388356ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2026.845478
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run build
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 31 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB │ gzip:  0.33 kB
+dist/assets/index-C9Pfg_4d.css   12.66 kB │ gzip:  3.65 kB
+dist/assets/index-DlrUQH_B.js   239.24 kB │ gzip: 75.62 kB
+✓ built in 3.81s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm_config_cache=/tmp/ir-npm-cache npm audit
+EXIT CODE: 0
+found 0 vulnerabilities
+
+
+Command: npm run test:e2e
+Working directory: /workspace/ir-translation-workbench
+Exit code: 0
+Merged stdout/stderr copied from exec/write_stdin session 63159 (final full 16-test run).
+Exact report duration: 64466.005 ms (64.466005 seconds), extracted from playwright-report/index.html embedded report.json.
+Report stats: total16, expected16, unexpected0, flaky0, skipped0, oktrue.
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test
+
+[WebServer] (node:8600) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:8613) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 16 tests using 1 worker
+
+(node:8686) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/workbench.spec.ts:42:1 › input bounds, explicit simulation label, save/reopen and text export (3.6s)
+  ✓   2 [chromium] › tests/workbench.spec.ts:99:1 › local retranslation preserves other saved edits and edits made while response is pending (6.4s)
+  ✓   3 [chromium] › tests/workbench.spec.ts:125:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (3.1s)
+  ✓   4 [chromium] › tests/workbench.spec.ts:150:1 › newer typing during a pending save remains editable and saves with the rebased revision (2.9s)
+  ✓   5 [chromium] › tests/workbench.spec.ts:192:1 › a model response arriving before save requires acknowledgment before replacing the newer result (4.0s)
+  ✓   6 [chromium] › tests/workbench.spec.ts:224:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (1.6s)
+  ✓   7 [chromium] › tests/workbench.spec.ts:284:1 › a delayed failed create retains the original input and unlocks exactly one retry (1.7s)
+  ✓   8 [chromium] › tests/workbench.spec.ts:350:1 › a service mode change during create retains the original draft and does not auto-translate (2.9s)
+  ✓   9 [chromium] › tests/workbench.spec.ts:408:1 › a temporary config read failure is visible and clears after recovery without a reload (2.8s)
+  ✓  10 [chromium] › tests/workbench.spec.ts:432:1 › config recovery clears its own error while retaining a newer action failure (4.2s)
+  ✓  11 [chromium] › tests/workbench.spec.ts:468:1 › a successful save keeps its notice while a list-read error appears and then clears after recovery (2.3s)
+  ✓  12 [chromium] › tests/workbench.spec.ts:524:3 › mock timeout: finite failure, visible state and recovery (10.8s)
+  ✓  13 [chromium] › tests/workbench.spec.ts:524:3 › mock rate-limit: finite failure, visible state and recovery (4.0s)
+  ✓  14 [chromium] › tests/workbench.spec.ts:524:3 › mock server-error: finite failure, visible state and recovery (4.0s)
+  ✓  15 [chromium] › tests/workbench.spec.ts:524:3 › mock malformed: finite failure, visible state and recovery (2.7s)
+  ✓  16 [chromium] › tests/workbench.spec.ts:524:3 › mock partial: finite failure, visible state and recovery (3.7s)
+
+  16 passed (1.1m)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run format:check
+EXIT CODE: 0
+All matched files use Prettier code style!
+
+COMMAND: git diff --check
+EXIT CODE: 0
+No whitespace errors.
+
+REGRESSION VALIDITY: isolated git archive of baseline6ef1e6a with only updated server/adapter.test.ts and server/service.test.ts overlaid.
+COMMAND (in isolated baseline copy): npm test -- server/adapter.test.ts server/service.test.ts
+EXIT CODE: 1 (expected red proof)
+RESULT: 44 failed,65 passed; original implementation incorrectly applies valid-JSON truncated/refusal/non-supported completion results.
+Original red output kept at /tmp/ir-review-baseline-sjwmnzf2/regression-output.txt.
+
+Browser full16 report copy: /tmp/ir-e2e-full16-report.html (temporary, excluded from repo).
+Reviewed screenshots use only synthetic robotics fund/source and manual placeholder edits.
+New pending-create screenshot asserts native typing cannot change a locked field; screenshot-only targeted recapture is separate from full16 run.
+
+No dependencies changed; npm ci not rerun this rework. Initial clean install evidence remains in checks.txt.
+Public-content scanner output below covers all reviewed snapshots, not only staged diff. This is a limited known-pattern guard plus manual review, not a universal secret detector.
+
+Command: npm run test:e2e -- --grep 'a delayed create freezes'
+Working directory: /workspace/ir-translation-workbench
+Exit code: 0
+Purpose: screenshot-only scroll stabilization after full16 passed; native typing uses no-space marker to avoid space-key page scroll animation. No product code changed.
+Merged stdout/stderr copied from exec/write_stdin session3880.
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test --grep a delayed create freezes
+
+[WebServer] (node:10559) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:10572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:10645) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/workbench.spec.ts:224:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (2.0s)
+
+  1 passed (5.2s)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run check:public -- --base a44ecb2
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD 6ef1e6aa50612ead1624af6a23e638d84d355bc9; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..6ef1e6aa50612ead1624af6a23e638d84d355bc9.
+File snapshots: HEAD=34, index=37, worktree=37, history=34 across 1 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

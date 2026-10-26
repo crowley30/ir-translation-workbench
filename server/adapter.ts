@@ -36,7 +36,11 @@ export function safeProviderMessage(code: string): string {
     case 'NETWORK_ERROR':
       return '无法连接翻译服务，请稍后重试。';
     case 'INVALID_RESPONSE':
-      return '翻译服务返回格式错误，本段未应用结果。';
+      return '翻译服务返回格式错误或不支持的完成状态，本段未应用结果。';
+    case 'INCOMPLETE_RESPONSE':
+      return '翻译服务返回内容被截断，本段未应用结果；请缩短原文后重试。';
+    case 'PROVIDER_REFUSAL':
+      return '翻译服务拒绝处理本段，本段未应用结果；请人工检查原文。';
     case 'NOT_CONFIGURED':
       return '真实翻译服务尚未完整配置或未显式启用。';
     case 'CANCELLED':
@@ -121,43 +125,55 @@ function validRealConfig(config: RealAdapterConfig): boolean {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
 function parseTranslation(body: unknown): string {
-  if (
-    !body ||
-    typeof body !== 'object' ||
-    !('choices' in body) ||
-    !Array.isArray(body.choices) ||
-    body.choices.length !== 1
-  )
+  if (!isRecord(body) || !Array.isArray(body.choices) || body.choices.length !== 1) {
     throw new ProviderError('INVALID_RESPONSE', false);
-  const choice = body.choices[0];
-  if (
-    !choice ||
-    typeof choice !== 'object' ||
-    !('message' in choice) ||
-    !choice.message ||
-    typeof choice.message !== 'object' ||
-    !('content' in choice.message) ||
-    typeof choice.message.content !== 'string'
-  )
+  }
+  const choice: unknown = body.choices[0];
+  if (!isRecord(choice) || choice.index !== 0) {
     throw new ProviderError('INVALID_RESPONSE', false);
+  }
+  // Valid JSON can still be a truncated answer. Only an explicit, supported
+  // successful completion may be applied; these deterministic failures do not retry.
+  if (choice.finish_reason === 'length') throw new ProviderError('INCOMPLETE_RESPONSE', false);
+  if (choice.finish_reason === 'content_filter') throw new ProviderError('PROVIDER_REFUSAL', false);
+  if (choice.finish_reason !== 'stop' || !isRecord(choice.message)) {
+    throw new ProviderError('INVALID_RESPONSE', false);
+  }
+  const message = choice.message;
+  if (message.role !== 'assistant') throw new ProviderError('INVALID_RESPONSE', false);
+  if (typeof message.refusal === 'string') throw new ProviderError('PROVIDER_REFUSAL', false);
+  if (message.refusal !== undefined && message.refusal !== null) {
+    throw new ProviderError('INVALID_RESPONSE', false);
+  }
+  if (
+    (message.tool_calls !== undefined &&
+      message.tool_calls !== null &&
+      (!Array.isArray(message.tool_calls) || message.tool_calls.length !== 0)) ||
+    (message.function_call !== undefined && message.function_call !== null) ||
+    typeof message.content !== 'string'
+  ) {
+    throw new ProviderError('INVALID_RESPONSE', false);
+  }
   let content: unknown;
   try {
-    content = JSON.parse(choice.message.content);
+    content = JSON.parse(message.content);
   } catch {
     throw new ProviderError('INVALID_RESPONSE', false);
   }
   if (
-    !content ||
-    typeof content !== 'object' ||
-    Array.isArray(content) ||
+    !isRecord(content) ||
     Object.keys(content).length !== 1 ||
-    !('translation' in content) ||
     typeof content.translation !== 'string' ||
     !content.translation.trim() ||
     content.translation.length > 40000
-  )
+  ) {
     throw new ProviderError('INVALID_RESPONSE', false);
+  }
   return content.translation;
 }
 
