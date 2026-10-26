@@ -1,0 +1,1055 @@
+P3 professional workflow and offline API interface acceptance evidence
+Date:2026-10-26
+Branch:feat/p0-p1-text-workbench
+Accepted baseline:127d4994959da82d5999ef8334b9e9a00b7d6122
+Synthetic data only. No real credentials, provider/DNS connection test, paid call, main merge, release or deployment.
+
+
+COMMAND: npm test
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test
+> vitest run && npm run test:public
+
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+
+ Test Files  13 passed (13)
+      Tests  597 passed (597)
+   Start at  04:53:16
+   Duration  18.66s (tests 87%, import 9%, transform 4%)
+
+    Isolate  13 workers spawned · ~140ms startup each (spawn + environment, per file)
+             at least ~1.67s faster with isolate: false — reuses workers across files instead of one per file
+
+
+> ir-translation-workbench@0.1.0 test:public
+> node --test scripts/check-public.test.mjs
+
+✔ empty staged diff still scans HEAD, index and working files (126.725256ms)
+✔ rejects synthetic credential in tracked worktree when staging is empty (139.202319ms)
+✔ checks complete staged snapshots even after worktree cleanup (131.127244ms)
+✔ checks nonignored untracked intended files and runtime artifacts (121.78005ms)
+✔ base range scans intermediate committed blobs removed before HEAD (288.048086ms)
+✔ client build still requires separation from provider config and credentials (117.259776ms)
+✔ missing build or invalid base never reports success (185.808144ms)
+✔ refuses success when the repository scan scope is empty (114.274865ms)
+✔ empty dist never reports a successful client build scan (119.540458ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1434.717771
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run lint
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 lint
+> eslint .
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run typecheck (final, including browser synchronization)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 typecheck
+> tsc --noEmit
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run build
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 43 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB │ gzip:  0.33 kB
+dist/assets/index-DXitt-_z.css   23.19 kB │ gzip:  5.67 kB
+dist/assets/index-BOQQZcwk.js   279.48 kB │ gzip: 87.11 kB
+✓ built in 2.48s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm_config_cache=/tmp/ir-npm-cache npm audit
+EXIT CODE: 0
+found 0 vulnerabilities
+
+
+COMMAND: npm run format:check
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run test:e2e -- tests/professional.spec.ts --grep-invert offline
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test tests/professional.spec.ts --grep-invert offline
+
+[WebServer] (node:34964) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:34977) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 12 tests using 1 worker
+
+(node:35071) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/professional.spec.ts:302:1 › terminology manager adds, edits, retains English and disables a project-scoped term (3.3s)
+  ✓   2 [chromium] › tests/professional.spec.ts:383:1 › manual numeric review shows exact source and translation locations and confirmation invalidates after editing (4.4s)
+  ✓   3 [chromium] › tests/professional.spec.ts:474:1 › project scope overrides higher-priority global candidates without silently rewriting saved translation (2.2s)
+  ✓   4 [chromium] › tests/professional.spec.ts:504:1 › equal-priority conflicting project choices are visible and prevent automatic translation (1.9s)
+  ✓   5 [chromium] › tests/professional.spec.ts:532:1 › library changes leave historical tasks immutable and a confirmed snapshot reapply preserves every manual edit (3.4s)
+  ✓   6 [chromium] › tests/professional.spec.ts:640:1 › saving a paragraph makes an existing preview stale and prevents its application (1.9s)
+  ✓   7 [chromium] › tests/professional.spec.ts:662:1 › a library revision changed after preview is rejected visibly and a fresh preview can recover (2.1s)
+  ✓   8 [chromium] › tests/professional.spec.ts:687:1 › preview and apply failures retain task state and allow explicit retries (1.9s)
+  ✓   9 [chromium] › tests/professional.spec.ts:729:1 › repeated preview clicks send one request and cancellation releases the form without reviving a late result (1.7s)
+  ✓  10 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late success (2.2s)
+  ✓  11 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late failure (2.2s)
+  ✓  12 [chromium] › tests/professional.spec.ts:842:1 › DOCX project context and table findings persist while downloads contain only the latest saved translation (4.9s)
+
+  12 passed (36.6s)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run test:e2e -- tests/professional.spec.ts --grep offline (first)
+EXIT CODE: 1
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test tests/professional.spec.ts --grep offline
+
+[WebServer] (node:36225) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:36238) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:36321) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [chromium] › tests/professional.spec.ts:919:1 › offline provider settings persist only nonsecret fields and never enable or contact a provider (10.5s)
+(node:36453) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  2 [chromium] › tests/professional.spec.ts:1015:1 › a stale offline settings save cannot overwrite a newer record and reload allows a safe retry (9.8s)
+(node:36586) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 [chromium] › tests/professional.spec.ts:1061:1 › collapsing and reopening offline settings preserves an unsaved draft without rereading the server (1.8s)
+  ✓  4 [chromium] › tests/professional.spec.ts:1108:1 › a pending offline save survives collapse and reopen without an older read rolling back the saved revision (2.3s)
+
+
+  1) [chromium] › tests/professional.spec.ts:919:1 › offline provider settings persist only nonsecret fields and never enable or contact a provider
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  locator('.provider-settings').getByLabel('服务协议', { exact: true }).locator('option[value=other]')
+    Expected: disabled
+    Received: enabled
+    Timeout:  8000ms
+
+    Call log:
+      - Expect "toBeDisabled" locator('.provider-settings').getByLabel('服务协议', { exact: true }).locator('option[value=other]') with timeout 8000ms
+      - waiting for locator('.provider-settings').getByLabel('服务协议', { exact: true }).locator('option[value=other]')
+        20 × locator resolved to <option disabled value="other">其它协议（待适配）</option>
+           - unexpected value "enabled"
+
+
+      950 |   await expect(
+      951 |     panel.getByLabel('服务协议', { exact: true }).locator('option[value=other]'),
+    > 952 |   ).toBeDisabled();
+          |     ^
+      953 |   await panel.getByLabel('服务基础地址', { exact: true }).fill('https://api.example.com/v1');
+      954 |   await panel.getByLabel('模型标识', { exact: true }).fill(model);
+      955 |   await panel.getByLabel('服务端凭据变量引用', { exact: true }).fill(reference);
+        at /workspace/ir-translation-workbench/tests/professional.spec.ts:952:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/professional-offline-provi-1940e-nable-or-contact-a-provider-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/professional-offline-provi-1940e-nable-or-contact-a-provider-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/professional-offline-provi-1940e-nable-or-contact-a-provider-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/professional-offline-provi-1940e-nable-or-contact-a-provider-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/professional.spec.ts:1015:1 › a stale offline settings save cannot overwrite a newer record and reload allows a safe retry
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  locator('.provider-settings').getByLabel('模型标识', { exact: true })
+    Expected: "synthetic-newer-server-model"
+    Received: "synthetic-unsaved-local-model"
+    Timeout:  8000ms
+
+    Call log:
+      - Expect "toHaveValue" locator('.provider-settings').getByLabel('模型标识', { exact: true }) with timeout 8000ms
+      - waiting for locator('.provider-settings').getByLabel('模型标识', { exact: true })
+        20 × locator resolved to <input maxlength="120" aria-label="模型标识" autocomplete="off" spellcheck="false" placeholder="服务商提供的模型名" value="synthetic-unsaved-local-model"/>
+           - unexpected value "synthetic-unsaved-local-model"
+
+
+      1048 |   );
+      1049 |   await panel.getByRole('button', { name: '重新加载设置', exact: true }).click();
+    > 1050 |   await expect(panel.getByLabel('模型标识', { exact: true })).toHaveValue(
+           |                                                           ^
+      1051 |     'synthetic-newer-server-model',
+      1052 |   );
+      1053 |   await panel.getByLabel('模型标识', { exact: true }).fill('synthetic-retried-browser-model');
+        at /workspace/ir-translation-workbench/tests/professional.spec.ts:1050:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/professional-a-stale-offli-ed65a--reload-allows-a-safe-retry-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/professional-a-stale-offli-ed65a--reload-allows-a-safe-retry-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/professional-a-stale-offli-ed65a--reload-allows-a-safe-retry-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/professional-a-stale-offli-ed65a--reload-allows-a-safe-retry-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › tests/professional.spec.ts:919:1 › offline provider settings persist only nonsecret fields and never enable or contact a provider
+    [chromium] › tests/professional.spec.ts:1015:1 › a stale offline settings save cannot overwrite a newer record and reload allows a safe retry
+  2 passed (31.6s)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run test:e2e -- tests/professional.spec.ts --grep offline (after valid disabled-option and dialog assertions)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test tests/professional.spec.ts --grep offline
+
+[WebServer] (node:36894) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:36907) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:36980) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/professional.spec.ts:919:1 › offline provider settings persist only nonsecret fields and never enable or contact a provider (2.6s)
+  ✓  2 [chromium] › tests/professional.spec.ts:1015:1 › a stale offline settings save cannot overwrite a newer record and reload allows a safe retry (1.5s)
+  ✓  3 [chromium] › tests/professional.spec.ts:1070:1 › collapsing and reopening offline settings preserves an unsaved draft without rereading the server (1.5s)
+  ✓  4 [chromium] › tests/professional.spec.ts:1117:1 › a pending offline save survives collapse and reopen without an older read rolling back the saved revision (1.8s)
+
+  4 passed (11.0s)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run test:e2e -- --reporter=list,json,html (first full)
+EXIT CODE: 1
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test --reporter=list,json,html
+
+[WebServer] (node:37971) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:37984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 50 tests using 1 worker
+
+(node:38056) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/docx.spec.ts:187:1 › supported DOCX completes preflight, durable review and actual Chinese/bilingual downloads (6.7s)
+  ✓   2 [chromium] › tests/docx.spec.ts:303:1 › formatting warnings require explicit acknowledgment and can be cancelled (1.4s)
+  ✓   3 [chromium] › tests/docx.spec.ts:320:3 › unsupported drawing is explicitly blocked before document task creation (1.2s)
+  ✓   4 [chromium] › tests/docx.spec.ts:320:3 › unsupported merged is explicitly blocked before document task creation (1.1s)
+  ✓   5 [chromium] › tests/docx.spec.ts:338:1 › fake extension and corrupt DOCX cannot create document tasks (1.3s)
+  ✓   6 [chromium] › tests/docx.spec.ts:364:1 › oversized DOCX is rejected by the browser and the raw server boundary (2.4s)
+  ✓   7 [chromium] › tests/docx.spec.ts:387:1 › repeated upload clicks send one request and cancellation ignores the late preflight result (1.3s)
+  ✓   8 [chromium] › tests/docx.spec.ts:435:1 › switching tasks aborts pending preflight and does not restore its late preview (1.9s)
+  ✓   9 [chromium] › tests/docx.spec.ts:475:1 › document translation cancellation keeps export disabled until remaining paragraphs recover (4.7s)
+  ✓  10 [chromium] › tests/docx.spec.ts:498:1 › partial document failure can retry without replacing another manually saved paragraph (5.4s)
+  ✓  11 [chromium] › tests/docx.spec.ts:522:1 › mode change during document task creation leaves a draft in the list without auto-translation (2.9s)
+  ✓  12 [chromium] › tests/professional.spec.ts:302:1 › terminology manager adds, edits, retains English and disables a project-scoped term (2.8s)
+  ✓  13 [chromium] › tests/professional.spec.ts:383:1 › manual numeric review shows exact source and translation locations and confirmation invalidates after editing (4.8s)
+  ✓  14 [chromium] › tests/professional.spec.ts:474:1 › project scope overrides higher-priority global candidates without silently rewriting saved translation (2.9s)
+  ✓  15 [chromium] › tests/professional.spec.ts:504:1 › equal-priority conflicting project choices are visible and prevent automatic translation (2.4s)
+  ✓  16 [chromium] › tests/professional.spec.ts:532:1 › library changes leave historical tasks immutable and a confirmed snapshot reapply preserves every manual edit (3.4s)
+  ✓  17 [chromium] › tests/professional.spec.ts:640:1 › saving a paragraph makes an existing preview stale and prevents its application (2.2s)
+  ✓  18 [chromium] › tests/professional.spec.ts:662:1 › a library revision changed after preview is rejected visibly and a fresh preview can recover (2.2s)
+  ✓  19 [chromium] › tests/professional.spec.ts:687:1 › preview and apply failures retain task state and allow explicit retries (1.9s)
+  ✓  20 [chromium] › tests/professional.spec.ts:729:1 › repeated preview clicks send one request and cancellation releases the form without reviving a late result (1.7s)
+  ✓  21 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late success (2.1s)
+  ✓  22 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late failure (2.3s)
+  ✓  23 [chromium] › tests/professional.spec.ts:842:1 › DOCX project context and table findings persist while downloads contain only the latest saved translation (4.9s)
+  ✓  24 [chromium] › tests/professional.spec.ts:919:1 › offline provider settings persist only nonsecret fields and never enable or contact a provider (2.3s)
+  ✓  25 [chromium] › tests/professional.spec.ts:1015:1 › a stale offline settings save cannot overwrite a newer record and reload allows a safe retry (1.7s)
+  ✓  26 [chromium] › tests/professional.spec.ts:1070:1 › collapsing and reopening offline settings preserves an unsaved draft without rereading the server (1.6s)
+  ✓  27 [chromium] › tests/professional.spec.ts:1117:1 › a pending offline save survives collapse and reopen without an older read rolling back the saved revision (2.8s)
+  ✓  28 [chromium] › tests/workbench.spec.ts:58:1 › input bounds, explicit simulation label, save/reopen and text export (5.8s)
+  ✓  29 [chromium] › tests/workbench.spec.ts:115:1 › local retranslation preserves other saved edits and edits made while response is pending (6.6s)
+  ✓  30 [chromium] › tests/workbench.spec.ts:141:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (3.7s)
+  ✓  31 [chromium] › tests/workbench.spec.ts:166:1 › newer typing during a pending save remains editable and saves with the rebased revision (3.7s)
+  ✓  32 [chromium] › tests/workbench.spec.ts:208:1 › a model response arriving before save requires acknowledgment before replacing the newer result (5.8s)
+  ✘  33 [chromium] › tests/workbench.spec.ts:240:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (1.7s)
+(node:39392) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  34 [chromium] › tests/workbench.spec.ts:302:1 › a delayed failed create retains the original input and unlocks exactly one retry (2.6s)
+  ✓  35 [chromium] › tests/workbench.spec.ts:368:1 › a service mode change during create retains the original draft and does not auto-translate (2.9s)
+  ✓  36 [chromium] › tests/workbench.spec.ts:426:1 › a temporary config read failure is visible and clears after recovery without a reload (3.0s)
+  ✓  37 [chromium] › tests/workbench.spec.ts:450:1 › config recovery clears its own error while retaining a newer action failure (4.6s)
+  ✓  38 [chromium] › tests/workbench.spec.ts:486:1 › a successful save keeps its notice while a list-read error appears and then clears after recovery (4.8s)
+  ✘  39 [chromium] › tests/workbench.spec.ts:541:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests (3.3s)
+(node:39712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  40 [chromium] › tests/workbench.spec.ts:572:1 › a hanging config request times out, aborts transport, then recovers on the next serial attempt (7.7s)
+  ✓  41 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (7.8s)
+  ✓  42 [chromium] › tests/workbench.spec.ts:653:1 › consecutive config 503 responses are shown in order before a later success clears the error (4.4s)
+  ✓  43 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late success (2.5s)
+  ✓  44 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late failure (2.4s)
+  ✓  45 [chromium] › tests/workbench.spec.ts:729:1 › reload and full document navigation close pending config streams without accumulating requests (9.0s)
+  ✓  46 [chromium] › tests/workbench.spec.ts:808:3 › mock timeout: finite failure, visible state and recovery (11.0s)
+  ✓  47 [chromium] › tests/workbench.spec.ts:808:3 › mock rate-limit: finite failure, visible state and recovery (4.8s)
+  ✓  48 [chromium] › tests/workbench.spec.ts:808:3 › mock server-error: finite failure, visible state and recovery (5.0s)
+  ✓  49 [chromium] › tests/workbench.spec.ts:808:3 › mock malformed: finite failure, visible state and recovery (3.6s)
+  ✓  50 [chromium] › tests/workbench.spec.ts:808:3 › mock partial: finite failure, visible state and recovery (4.3s)
+
+
+  1) [chromium] › tests/workbench.spec.ts:240:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 2
+
+      Object {
+    +   "context": "",
+    +   "project": "",
+        "style": "faithful",
+        "text": "Dear investor, our synthetic robotics fund invested USD 12 million in 2026.
+
+      This fictional company develops AI models for warehouse robots.",
+      }
+
+      283 |   await page.keyboard.type('UNSAVED_NEW_CONTENT');
+      284 |   await expect(input).toHaveValue(synthetic);
+    > 285 |   expect(submitted).toEqual({ text: synthetic, style: 'faithful' });
+          |                     ^
+      286 |   expect(createRequests).toBe(1);
+      287 |   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      288 |   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+        at /workspace/ir-translation-workbench/tests/workbench.spec.ts:285:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/workbench-a-delayed-create-14370-and-ignores-repeated-clicks-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/workbench-a-delayed-create-14370-and-ignores-repeated-clicks-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/workbench-a-delayed-create-14370-and-ignores-repeated-clicks-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/workbench-a-delayed-create-14370-and-ignores-repeated-clicks-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/workbench.spec.ts:541:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('模拟模式', { exact: true })
+    Expected: visible
+    Error: strict mode violation: getByText('模拟模式', { exact: true }) resolved to 2 elements:
+        1) <span class="mode-pill ">…</span> aka getByRole('banner').getByText('模拟模式')
+        2) <option value="mock">模拟模式</option> aka getByRole('option', { name: '模拟模式' })
+
+    Call log:
+      - Expect "toBeVisible" getByText('模拟模式', { exact: true }) with timeout 8000ms
+      - waiting for getByText('模拟模式', { exact: true })
+
+
+      564 |   await expect(create).toBeDisabled();
+      565 |   await expect(create).toBeEnabled();
+    > 566 |   await expect(page.getByText('模拟模式', { exact: true })).toBeVisible();
+          |                                                         ^
+      567 |   await expect.poll(() => fulfilled).toBe(2);
+      568 |   expect(started).toBe(2);
+      569 |   expect(maxInFlight).toBe(1);
+        at /workspace/ir-translation-workbench/tests/workbench.spec.ts:566:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/workbench-slow-startup-con-e86bb-ithout-overlapping-requests-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/workbench-slow-startup-con-e86bb-ithout-overlapping-requests-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/workbench-slow-startup-con-e86bb-ithout-overlapping-requests-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/workbench-slow-startup-con-e86bb-ithout-overlapping-requests-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › tests/workbench.spec.ts:240:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks
+    [chromium] › tests/workbench.spec.ts:541:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests
+  48 passed (3.2m)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run test:e2e -- --reporter=list,json,html (second full)
+EXIT CODE: 1
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test --reporter=list,json,html
+
+[WebServer] (node:40454) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:40467) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 50 tests using 1 worker
+
+(node:40541) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/docx.spec.ts:187:1 › supported DOCX completes preflight, durable review and actual Chinese/bilingual downloads (6.5s)
+  ✓   2 [chromium] › tests/docx.spec.ts:303:1 › formatting warnings require explicit acknowledgment and can be cancelled (1.3s)
+  ✓   3 [chromium] › tests/docx.spec.ts:320:3 › unsupported drawing is explicitly blocked before document task creation (1.2s)
+  ✓   4 [chromium] › tests/docx.spec.ts:320:3 › unsupported merged is explicitly blocked before document task creation (1.2s)
+  ✓   5 [chromium] › tests/docx.spec.ts:338:1 › fake extension and corrupt DOCX cannot create document tasks (1.4s)
+  ✓   6 [chromium] › tests/docx.spec.ts:364:1 › oversized DOCX is rejected by the browser and the raw server boundary (2.0s)
+  ✓   7 [chromium] › tests/docx.spec.ts:387:1 › repeated upload clicks send one request and cancellation ignores the late preflight result (1.4s)
+  ✓   8 [chromium] › tests/docx.spec.ts:435:1 › switching tasks aborts pending preflight and does not restore its late preview (1.4s)
+  ✓   9 [chromium] › tests/docx.spec.ts:475:1 › document translation cancellation keeps export disabled until remaining paragraphs recover (4.7s)
+  ✓  10 [chromium] › tests/docx.spec.ts:498:1 › partial document failure can retry without replacing another manually saved paragraph (5.2s)
+  ✓  11 [chromium] › tests/docx.spec.ts:522:1 › mode change during document task creation leaves a draft in the list without auto-translation (3.3s)
+  ✓  12 [chromium] › tests/professional.spec.ts:302:1 › terminology manager adds, edits, retains English and disables a project-scoped term (4.0s)
+  ✓  13 [chromium] › tests/professional.spec.ts:383:1 › manual numeric review shows exact source and translation locations and confirmation invalidates after editing (5.3s)
+  ✓  14 [chromium] › tests/professional.spec.ts:474:1 › project scope overrides higher-priority global candidates without silently rewriting saved translation (2.3s)
+  ✓  15 [chromium] › tests/professional.spec.ts:504:1 › equal-priority conflicting project choices are visible and prevent automatic translation (1.6s)
+  ✓  16 [chromium] › tests/professional.spec.ts:532:1 › library changes leave historical tasks immutable and a confirmed snapshot reapply preserves every manual edit (2.8s)
+  ✓  17 [chromium] › tests/professional.spec.ts:640:1 › saving a paragraph makes an existing preview stale and prevents its application (2.0s)
+  ✓  18 [chromium] › tests/professional.spec.ts:662:1 › a library revision changed after preview is rejected visibly and a fresh preview can recover (2.1s)
+  ✓  19 [chromium] › tests/professional.spec.ts:687:1 › preview and apply failures retain task state and allow explicit retries (2.1s)
+  ✓  20 [chromium] › tests/professional.spec.ts:729:1 › repeated preview clicks send one request and cancellation releases the form without reviving a late result (2.4s)
+  ✓  21 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late success (2.8s)
+  ✓  22 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late failure (2.2s)
+  ✓  23 [chromium] › tests/professional.spec.ts:842:1 › DOCX project context and table findings persist while downloads contain only the latest saved translation (4.9s)
+  ✓  24 [chromium] › tests/professional.spec.ts:919:1 › offline provider settings persist only nonsecret fields and never enable or contact a provider (2.4s)
+  ✓  25 [chromium] › tests/professional.spec.ts:1015:1 › a stale offline settings save cannot overwrite a newer record and reload allows a safe retry (1.9s)
+  ✓  26 [chromium] › tests/professional.spec.ts:1070:1 › collapsing and reopening offline settings preserves an unsaved draft without rereading the server (1.6s)
+  ✓  27 [chromium] › tests/professional.spec.ts:1117:1 › a pending offline save survives collapse and reopen without an older read rolling back the saved revision (1.9s)
+  ✓  28 [chromium] › tests/workbench.spec.ts:58:1 › input bounds, explicit simulation label, save/reopen and text export (4.8s)
+  ✓  29 [chromium] › tests/workbench.spec.ts:115:1 › local retranslation preserves other saved edits and edits made while response is pending (5.7s)
+  ✓  30 [chromium] › tests/workbench.spec.ts:141:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (3.9s)
+  ✓  31 [chromium] › tests/workbench.spec.ts:166:1 › newer typing during a pending save remains editable and saves with the rebased revision (5.8s)
+  ✓  32 [chromium] › tests/workbench.spec.ts:208:1 › a model response arriving before save requires acknowledgment before replacing the newer result (5.6s)
+  ✓  33 [chromium] › tests/workbench.spec.ts:240:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (2.2s)
+  ✓  34 [chromium] › tests/workbench.spec.ts:302:1 › a delayed failed create retains the original input and unlocks exactly one retry (2.5s)
+  ✓  35 [chromium] › tests/workbench.spec.ts:368:1 › a service mode change during create retains the original draft and does not auto-translate (2.9s)
+  ✓  36 [chromium] › tests/workbench.spec.ts:426:1 › a temporary config read failure is visible and clears after recovery without a reload (2.8s)
+  ✓  37 [chromium] › tests/workbench.spec.ts:450:1 › config recovery clears its own error while retaining a newer action failure (4.3s)
+  ✓  38 [chromium] › tests/workbench.spec.ts:486:1 › a successful save keeps its notice while a list-read error appears and then clears after recovery (4.7s)
+  ✓  39 [chromium] › tests/workbench.spec.ts:541:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests (7.0s)
+  ✓  40 [chromium] › tests/workbench.spec.ts:572:1 › a hanging config request times out, aborts transport, then recovers on the next serial attempt (7.5s)
+  ✘  41 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (18.8s)
+(node:42144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  42 [chromium] › tests/workbench.spec.ts:653:1 › consecutive config 503 responses are shown in order before a later success clears the error (4.4s)
+  ✓  43 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late success (2.4s)
+  ✓  44 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late failure (2.4s)
+  ✓  45 [chromium] › tests/workbench.spec.ts:729:1 › reload and full document navigation close pending config streams without accumulating requests (9.3s)
+  ✓  46 [chromium] › tests/workbench.spec.ts:808:3 › mock timeout: finite failure, visible state and recovery (11.9s)
+  ✓  47 [chromium] › tests/workbench.spec.ts:808:3 › mock rate-limit: finite failure, visible state and recovery (5.1s)
+  ✓  48 [chromium] › tests/workbench.spec.ts:808:3 › mock server-error: finite failure, visible state and recovery (4.9s)
+  ✓  49 [chromium] › tests/workbench.spec.ts:808:3 › mock malformed: finite failure, visible state and recovery (3.9s)
+  ✓  50 [chromium] › tests/workbench.spec.ts:808:3 › mock partial: finite failure, visible state and recovery (4.4s)
+
+
+  1) [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+      639 |     await expect(timeout).toBeVisible({ timeout: 8000 });
+      640 |     await expect.poll(() => hanging.size).toBe(0);
+    > 641 |     expect(requests).toBe(1);
+          |                      ^
+      642 |     recover = true;
+      643 |     await expect(page.getByRole('button', { name: '创建并翻译', exact: true })).toBeEnabled();
+      644 |     await expect(timeout).toHaveCount(0);
+        at /workspace/ir-translation-workbench/tests/workbench.spec.ts:641:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/workbench-the-config-deadl-da23b-es-the-streaming-connection-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/workbench-the-config-deadl-da23b-es-the-streaming-connection-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/workbench-the-config-deadl-da23b-es-the-streaming-connection-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/workbench-the-config-deadl-da23b-es-the-streaming-connection-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection
+  49 passed (3.4m)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run test:e2e -- tests/workbench.spec.ts --grep 'config deadline also' --repeat-each=3 (original synchronization unchanged)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test tests/workbench.spec.ts --grep config deadline also --repeat-each=3
+
+[WebServer] (node:42646) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:42659) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:42730) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (8.0s)
+(node:42863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (8.0s)
+(node:43014) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (8.0s)
+
+  3 passed (29.4s)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: PLAYWRIGHT_HTML_OUTPUT_DIR=/tmp/ir-p3-full-browser-report PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/ir-p3-full-browser.json npm run test:e2e -- --reporter=list,json,html (final complete run)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test --reporter=list,json,html
+
+[WebServer] (node:43238) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:43251) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 50 tests using 1 worker
+
+(node:43322) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/docx.spec.ts:187:1 › supported DOCX completes preflight, durable review and actual Chinese/bilingual downloads (6.9s)
+  ✓   2 [chromium] › tests/docx.spec.ts:303:1 › formatting warnings require explicit acknowledgment and can be cancelled (1.4s)
+  ✓   3 [chromium] › tests/docx.spec.ts:320:3 › unsupported drawing is explicitly blocked before document task creation (1.3s)
+  ✓   4 [chromium] › tests/docx.spec.ts:320:3 › unsupported merged is explicitly blocked before document task creation (1.2s)
+  ✓   5 [chromium] › tests/docx.spec.ts:338:1 › fake extension and corrupt DOCX cannot create document tasks (1.4s)
+  ✓   6 [chromium] › tests/docx.spec.ts:364:1 › oversized DOCX is rejected by the browser and the raw server boundary (2.1s)
+  ✓   7 [chromium] › tests/docx.spec.ts:387:1 › repeated upload clicks send one request and cancellation ignores the late preflight result (1.3s)
+  ✓   8 [chromium] › tests/docx.spec.ts:435:1 › switching tasks aborts pending preflight and does not restore its late preview (1.5s)
+  ✓   9 [chromium] › tests/docx.spec.ts:475:1 › document translation cancellation keeps export disabled until remaining paragraphs recover (4.7s)
+  ✓  10 [chromium] › tests/docx.spec.ts:498:1 › partial document failure can retry without replacing another manually saved paragraph (6.2s)
+  ✓  11 [chromium] › tests/docx.spec.ts:522:1 › mode change during document task creation leaves a draft in the list without auto-translation (3.0s)
+  ✓  12 [chromium] › tests/professional.spec.ts:302:1 › terminology manager adds, edits, retains English and disables a project-scoped term (2.8s)
+  ✓  13 [chromium] › tests/professional.spec.ts:383:1 › manual numeric review shows exact source and translation locations and confirmation invalidates after editing (5.2s)
+  ✓  14 [chromium] › tests/professional.spec.ts:474:1 › project scope overrides higher-priority global candidates without silently rewriting saved translation (4.4s)
+  ✓  15 [chromium] › tests/professional.spec.ts:504:1 › equal-priority conflicting project choices are visible and prevent automatic translation (1.5s)
+  ✓  16 [chromium] › tests/professional.spec.ts:532:1 › library changes leave historical tasks immutable and a confirmed snapshot reapply preserves every manual edit (2.7s)
+  ✓  17 [chromium] › tests/professional.spec.ts:640:1 › saving a paragraph makes an existing preview stale and prevents its application (1.8s)
+  ✓  18 [chromium] › tests/professional.spec.ts:662:1 › a library revision changed after preview is rejected visibly and a fresh preview can recover (2.0s)
+  ✓  19 [chromium] › tests/professional.spec.ts:687:1 › preview and apply failures retain task state and allow explicit retries (1.8s)
+  ✓  20 [chromium] › tests/professional.spec.ts:729:1 › repeated preview clicks send one request and cancellation releases the form without reviving a late result (1.7s)
+  ✓  21 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late success (2.2s)
+  ✓  22 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late failure (2.2s)
+  ✓  23 [chromium] › tests/professional.spec.ts:842:1 › DOCX project context and table findings persist while downloads contain only the latest saved translation (4.9s)
+  ✓  24 [chromium] › tests/professional.spec.ts:919:1 › offline provider settings persist only nonsecret fields and never enable or contact a provider (2.3s)
+  ✓  25 [chromium] › tests/professional.spec.ts:1015:1 › a stale offline settings save cannot overwrite a newer record and reload allows a safe retry (1.6s)
+  ✓  26 [chromium] › tests/professional.spec.ts:1070:1 › collapsing and reopening offline settings preserves an unsaved draft without rereading the server (1.5s)
+  ✓  27 [chromium] › tests/professional.spec.ts:1117:1 › a pending offline save survives collapse and reopen without an older read rolling back the saved revision (1.9s)
+  ✓  28 [chromium] › tests/workbench.spec.ts:58:1 › input bounds, explicit simulation label, save/reopen and text export (4.4s)
+  ✓  29 [chromium] › tests/workbench.spec.ts:115:1 › local retranslation preserves other saved edits and edits made while response is pending (5.9s)
+  ✓  30 [chromium] › tests/workbench.spec.ts:141:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (3.6s)
+  ✓  31 [chromium] › tests/workbench.spec.ts:166:1 › newer typing during a pending save remains editable and saves with the rebased revision (3.7s)
+  ✓  32 [chromium] › tests/workbench.spec.ts:208:1 › a model response arriving before save requires acknowledgment before replacing the newer result (5.2s)
+  ✓  33 [chromium] › tests/workbench.spec.ts:240:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (2.1s)
+  ✓  34 [chromium] › tests/workbench.spec.ts:302:1 › a delayed failed create retains the original input and unlocks exactly one retry (2.2s)
+  ✓  35 [chromium] › tests/workbench.spec.ts:368:1 › a service mode change during create retains the original draft and does not auto-translate (3.0s)
+  ✓  36 [chromium] › tests/workbench.spec.ts:426:1 › a temporary config read failure is visible and clears after recovery without a reload (2.7s)
+  ✓  37 [chromium] › tests/workbench.spec.ts:450:1 › config recovery clears its own error while retaining a newer action failure (4.2s)
+  ✓  38 [chromium] › tests/workbench.spec.ts:486:1 › a successful save keeps its notice while a list-read error appears and then clears after recovery (4.5s)
+  ✓  39 [chromium] › tests/workbench.spec.ts:541:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests (6.9s)
+  ✓  40 [chromium] › tests/workbench.spec.ts:572:1 › a hanging config request times out, aborts transport, then recovers on the next serial attempt (7.5s)
+  ✓  41 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (7.9s)
+  ✓  42 [chromium] › tests/workbench.spec.ts:675:1 › consecutive config 503 responses are shown in order before a later success clears the error (4.4s)
+  ✓  43 [chromium] › tests/workbench.spec.ts:695:3 › switching tasks aborts a pending old detail read and ignores its late success (2.3s)
+  ✓  44 [chromium] › tests/workbench.spec.ts:695:3 › switching tasks aborts a pending old detail read and ignores its late failure (2.3s)
+  ✓  45 [chromium] › tests/workbench.spec.ts:751:1 › reload and full document navigation close pending config streams without accumulating requests (8.8s)
+  ✓  46 [chromium] › tests/workbench.spec.ts:830:3 › mock timeout: finite failure, visible state and recovery (10.7s)
+  ✓  47 [chromium] › tests/workbench.spec.ts:830:3 › mock rate-limit: finite failure, visible state and recovery (4.9s)
+  ✓  48 [chromium] › tests/workbench.spec.ts:830:3 › mock server-error: finite failure, visible state and recovery (5.0s)
+  ✓  49 [chromium] › tests/workbench.spec.ts:830:3 › mock malformed: finite failure, visible state and recovery (4.3s)
+  ✓  50 [chromium] › tests/workbench.spec.ts:830:3 › mock partial: finite failure, visible state and recovery (4.5s)
+
+  50 passed (3.1m)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npx vitest run server/review.test.ts (red regression for co-winning alternatives and unsupported numeric formats)
+EXIT CODE: 1
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+ ❯ server/review.test.ts (71 tests | 7 failed) 98ms
+   ❯ bounded saved-text equivalences (44)
+     × does not reinterpret an unsupported numeric form: The ratio is .5. → 比率为5。 9ms
+     × does not reinterpret an unsupported numeric form: The ratio is -.5. → 比率为5。 1ms
+     × does not reinterpret an unsupported numeric form: The ratio is .5. → 比率为0.5。 6ms
+     × does not reinterpret an unsupported numeric form: The amount is (12). → 金额为12。 2ms
+     × does not reinterpret an unsupported numeric form: The amount is 12. → 金额为（12）。 0ms
+     × does not reinterpret an unsupported numeric form: The amount is (USD 12 million). → 金额为1200万美元。 0ms
+   ❯ resolved terminology review prompts (16)
+     × unions alternatives from real co-winning equivalent choices without dropping either note 16ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/review.test.ts > bounded saved-text equivalences > does not reinterpret an unsupported numeric form: The ratio is .5. → 比率为5。
+ FAIL  server/review.test.ts > bounded saved-text equivalences > does not reinterpret an unsupported numeric form: The ratio is -.5. → 比率为5。
+ FAIL  server/review.test.ts > bounded saved-text equivalences > does not reinterpret an unsupported numeric form: The amount is (12). → 金额为12。
+ FAIL  server/review.test.ts > bounded saved-text equivalences > does not reinterpret an unsupported numeric form: The amount is 12. → 金额为（12）。
+ FAIL  server/review.test.ts > bounded saved-text equivalences > does not reinterpret an unsupported numeric form: The amount is (USD 12 million). → 金额为1200万美元。
+AssertionError: expected 0 to be greater than 0
+ ❯ server/review.test.ts:147:29
+    145|   ])('does not reinterpret an unsupported numeric form: %s → %s', (sou…
+    146|     const findings = analyzeReview(task(source, translation));
+    147|     expect(findings.length).toBeGreaterThan(0);
+       |                             ^
+    148|     expect(
+    149|       findings.every(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  server/review.test.ts > bounded saved-text equivalences > does not reinterpret an unsupported numeric form: The ratio is .5. → 比率为0.5。
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ server/review.test.ts:152:7
+    150|         (finding) => finding.code === 'UNCERTAIN_FORMAT' && finding.ce…
+    151|       ),
+    152|     ).toBe(true);
+       |       ^
+    153|     for (const finding of findings)
+    154|       for (const field of ['source', 'translation'] as const) {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  server/review.test.ts > resolved terminology review prompts > unions alternatives from real co-winning equivalent choices without dropping either note
+AssertionError: expected [ { …(10) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "certainty": "uncertain",
++     "code": "TERM_MISMATCH",
++     "id": "p1:r3:snone:TERM_MISMATCH:4:x:0",
++     "paragraphId": "p1",
++     "paragraphLocation": "表格 1 / 第 2 行 / 第 1 列 / 段落 1",
++     "reason": "未找到术语候选「人工智能 / 智能系统」；语境或改写可能合理，请人工核对。 备注：第二条适用说明",
++     "severity": "review",
++     "source": {
++       "end": 6,
++       "start": 4,
++       "text": "AI",
++     },
++     "termId": "term-b",
++     "translation": null,
++   },
++ ]
+
+ ❯ server/review.test.ts:418:71
+    416|     expect(resolution.matches.map((match) => match.entry.id)).toEqual(…
+    417|     const before = JSON.stringify({ entries, snapshot, resolution });
+    418|     expect(analyzeReview(task(source, '机器智能基金'), { p1: resolution })).…
+       |                                                                       ^
+    419|     expect(analyzeReview(task(source, '智能系统基金'), { p1: resolution })).…
+    420|     const findings = analyzeReview(task(source, '科技基金'), { p1: resolut…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 64 passed (71)
+   Start at  04:48:17
+   Duration  443ms (tests 47%, transform 37%, import 14%, worker 2%)
+
+
+
+COMMAND: python scripts/render-docx-evidence.py /tmp/ir-p3-exports/chinese.docx /tmp/ir-p3-exports/bilingual.docx --task-json /tmp/ir-p3-exports/task.json --output /tmp/ir-p3-render
+EXIT CODE: 0
+RUN ["soffice", "--version"]
+RUN ["pdftoppm", "-v"]
+Rendering synthetic sample: chinese.docx
+RUN ["soffice", "-env:UserInstallation=file:///tmp/ir-docx-render-bhqywavb/chinese/profile", "--headless", "--convert-to", "pdf:writer_pdf_Export", "--outdir", "/tmp/ir-docx-render-bhqywavb/chinese", "/tmp/ir-p3-exports/chinese.docx"]
+RUN ["pdftoppm", "-png", "-r", "110", "/tmp/ir-p3-render/chinese.pdf", "/tmp/ir-p3-render/chinese"]
+RESULT chinese.docx: pages=1, missing=0, marker=True
+Rendering synthetic sample: bilingual.docx
+RUN ["soffice", "-env:UserInstallation=file:///tmp/ir-docx-render-bhqywavb/bilingual/profile", "--headless", "--convert-to", "pdf:writer_pdf_Export", "--outdir", "/tmp/ir-docx-render-bhqywavb/bilingual", "/tmp/ir-p3-exports/bilingual.docx"]
+RUN ["pdftoppm", "-png", "-r", "110", "/tmp/ir-p3-render/bilingual.pdf", "/tmp/ir-p3-render/bilingual"]
+RESULT bilingual.docx: pages=1, missing=0, marker=True
+Evidence report: /tmp/ir-p3-render/render-report.json; exit=0
+
+
+Final Playwright JSON statistics (no retries):
+{
+  "stats": {
+    "startTime": "2026-10-26T05:06:32.032Z",
+    "duration": 187930.825,
+    "expected": 50,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "errors": []
+}
+
+Renderer complete report and saved task comparison:
+{
+  "scope": "Synthetic exports only; LibreOffice rendering does not establish Microsoft Word compatibility, page fidelity, or translation quality.",
+  "commands": [
+    {
+      "command": [
+        "soffice",
+        "--version"
+      ],
+      "exitCode": 0,
+      "seconds": 0.318,
+      "stdout": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5\n\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-v"
+      ],
+      "exitCode": 0,
+      "seconds": 0.032,
+      "stdout": "",
+      "stderr": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC\n"
+    },
+    {
+      "command": [
+        "soffice",
+        "-env:UserInstallation=file:///tmp/ir-docx-render-bhqywavb/chinese/profile",
+        "--headless",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        "/tmp/ir-docx-render-bhqywavb/chinese",
+        "/tmp/ir-p3-exports/chinese.docx"
+      ],
+      "exitCode": 0,
+      "seconds": 1.024,
+      "stdout": "convert /tmp/ir-p3-exports/chinese.docx as a Writer document -> /tmp/ir-docx-render-bhqywavb/chinese/chinese.pdf using filter : writer_pdf_Export\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-png",
+        "-r",
+        "110",
+        "/tmp/ir-p3-render/chinese.pdf",
+        "/tmp/ir-p3-render/chinese"
+      ],
+      "exitCode": 0,
+      "seconds": 0.105,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "soffice",
+        "-env:UserInstallation=file:///tmp/ir-docx-render-bhqywavb/bilingual/profile",
+        "--headless",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        "/tmp/ir-docx-render-bhqywavb/bilingual",
+        "/tmp/ir-p3-exports/bilingual.docx"
+      ],
+      "exitCode": 0,
+      "seconds": 0.699,
+      "stdout": "convert /tmp/ir-p3-exports/bilingual.docx as a Writer document -> /tmp/ir-docx-render-bhqywavb/bilingual/bilingual.pdf using filter : writer_pdf_Export\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-png",
+        "-r",
+        "110",
+        "/tmp/ir-p3-render/bilingual.pdf",
+        "/tmp/ir-p3-render/bilingual"
+      ],
+      "exitCode": 0,
+      "seconds": 0.135,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "files": [
+    {
+      "sourceFilename": "chinese.docx",
+      "sourceBytes": 10515,
+      "pdf": "chinese.pdf",
+      "pages": 1,
+      "pageSizesPt": [
+        [
+          595.303955078125,
+          841.8897705078125
+        ]
+      ],
+      "fonts": [
+        "BAAAAA+LiberationSans",
+        "CAAAAA+NotoSansCJKsc-Regular",
+        "DAAAAA+NotoSansCJKsc-Regular",
+        "EAAAAA+LiberationSans"
+      ],
+      "structure": [
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "[模拟文档·非实际翻译] 中文译文。包含模拟占位内容，请勿作为正式材料使用。"
+        },
+        {
+          "kind": "table",
+          "rows": [
+            [
+              [
+                "项目收入为1200万美元，日期为2026年10月26日；人工校订 & <核对>。"
+              ]
+            ]
+          ]
+        }
+      ],
+      "nonemptyParagraphs": 2,
+      "missingVisibleParagraphs": [],
+      "requiredMarker": "模拟",
+      "requiredMarkerVisible": true,
+      "savedTaskComparison": {
+        "taskId": "dc958abc-1237-4177-a6c0-b00637f7bc6a",
+        "mode": "chinese",
+        "structuralParagraphs": 1,
+        "translatableParagraphs": 1,
+        "expectedParagraphsAfterNotice": 1,
+        "actualParagraphsAfterNotice": 1,
+        "exactParagraphOrderAndText": true,
+        "humanEditedIdsAndRevisions": {
+          "p0001": 3
+        }
+      }
+    },
+    {
+      "sourceFilename": "bilingual.docx",
+      "sourceBytes": 10637,
+      "pdf": "bilingual.pdf",
+      "pages": 1,
+      "pageSizesPt": [
+        [
+          595.303955078125,
+          841.8897705078125
+        ]
+      ],
+      "fonts": [
+        "BAAAAA+LiberationSans",
+        "CAAAAA+NotoSansCJKsc-Regular",
+        "DAAAAA+NotoSansCJKsc-Regular",
+        "EAAAAA+LiberationSans"
+      ],
+      "structure": [
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "[模拟文档·非实际翻译] 中英对照，每组先原文后译文。包含模拟占位内容，请勿作为正式材料使用。"
+        },
+        {
+          "kind": "table",
+          "rows": [
+            [
+              [
+                "SyntheticProtocoligfbbbafadadegabbhgcbdcejcejcadh revenue was USD 12 million on 2026-10-26.",
+                "项目收入为1200万美元，日期为2026年10月26日；人工校订 & <核对>。"
+              ]
+            ]
+          ]
+        }
+      ],
+      "nonemptyParagraphs": 3,
+      "missingVisibleParagraphs": [],
+      "requiredMarker": "模拟",
+      "requiredMarkerVisible": true,
+      "savedTaskComparison": {
+        "taskId": "dc958abc-1237-4177-a6c0-b00637f7bc6a",
+        "mode": "bilingual",
+        "structuralParagraphs": 1,
+        "translatableParagraphs": 1,
+        "expectedParagraphsAfterNotice": 2,
+        "actualParagraphsAfterNotice": 2,
+        "exactParagraphOrderAndText": true,
+        "humanEditedIdsAndRevisions": {
+          "p0001": 3
+        }
+      }
+    }
+  ],
+  "libreOfficeVersion": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+  "popplerVersion": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC",
+  "exitCode": 0
+}
+
+
+Observed failures and fixes: initial full48/50 fixed in product (omit empty optional fields, disambiguate mock-settings text); second49/50 original transient empty-set polling missed first TCP close. Original streaming case repeated3/3; final event-based synchronization keeps8s bound, exact zero hanging connections and1/2 request counts, no timeout/expectation relaxation. Final50/50. Offline initial2 failures were native option matcher and newly required explicit dirty-discard confirmation; corrected without weaker product assertions. QA red7fail/64pass fixed and final72pass in full597. Disabled example revision0 can now be explicitly enabled via safe CAS. Provider page drafts and read/write generations fixed. All failures retained above.
+
+Scope verification: production default real transport disabled even with environment opt-in; createRealAdapter without explicitly injected transport refuses before any network. Stub tests exercise style/project/context/snapshot/relevant terminology. Offline settings never activate translation, read DNS, follow redirects or send provider requests. Only reference names and present/absent state returned; raw secret fields rejected. Static URL syntax does not validate resolved destinations; future DNS pinning/TLS/redirect/provider/budget gates remain.
+
+Manual content and visual review: all changed/new files and evidence inspected; screenshots use generated synthetic projects/source words and missing environment-variable references, not secret values. Both rendered pages viewed, Chinese and & <核对> readable, table order/text exact, no obvious missing glyphs/clipping. Downloaded DOCX excludes project/background, old text, findings and auxiliary explanation. Microsoft Word, actual provider compatibility and professional translation quality not run. No scores.
+
+Dependencies/lockfile unchanged; npm ci not rerun. Full unit suite maxWorkers1/fileParallelismfalse, same15000ms deadline, isolated workers reused serially. Old accepted parsing/adapter-failure/streaming/creation regressions included. Explicit formatting invocation on .env.example once exited2 for unknown parser; not reported as a pass, final format:check separately0. Temporary reports, SQLite, raw uploads/downloads remain ignored. Public scan covers all HEAD/index/worktree/historical snapshots and nonempty client build; outputs follow. Manual review supplements limited known-pattern scan.
+
+COMMAND: npm run check:public -- --base a44ecb2 (complete worktree before staging)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD 127d4994959da82d5999ef8334b9e9a00b7d6122; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..127d4994959da82d5999ef8334b9e9a00b7d6122.
+File snapshots: HEAD=69, index=69, worktree=104, history=106 across 5 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: git diff --check
+EXIT CODE: 0
+No whitespace errors.
+
+COMMAND: npm run check:public -- --base a44ecb2 (complete staged snapshots)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD 127d4994959da82d5999ef8334b9e9a00b7d6122; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..127d4994959da82d5999ef8334b9e9a00b7d6122.
+File snapshots: HEAD=69, index=104, worktree=104, history=106 across 5 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run format:check (final documentation)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+Initial git diff --cached --check exited2 because captured Playwright failure headings carried trailing spaces. Only trailing stdout whitespace normalized; test outcomes and payload text unchanged.

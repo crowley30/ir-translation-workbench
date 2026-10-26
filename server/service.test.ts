@@ -281,7 +281,7 @@ describe('bounded failures and retry', () => {
 
 describe('real adapter completion validation at persistence boundary', () => {
   const config = {
-    apiUrl: 'https://synthetic.example/v1/chat/completions',
+    apiUrl: 'https://synthetic.example.com/v1/chat/completions',
     apiKey: 'synthetic-service-placeholder',
     model: 'synthetic-model',
     enabled: true,

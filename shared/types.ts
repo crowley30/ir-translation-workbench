@@ -1,4 +1,5 @@
 import type { DocxDocument } from './docx';
+import type { ProfessionalState } from './professional';
 
 export type Style = 'faithful' | 'business';
 export type ParagraphStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
@@ -16,6 +17,7 @@ export interface Paragraph {
   location?: string;
 }
 export interface Task {
+  revision?: number;
   id: string;
   title: string;
   style: Style;
@@ -25,6 +27,7 @@ export interface Task {
   updatedAt: string;
   paragraphs: Paragraph[];
   document?: DocxDocument;
+  professional?: ProfessionalState;
 }
 export interface ServiceConfig {
   mode: 'mock' | 'real';

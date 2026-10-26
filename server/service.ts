@@ -10,6 +10,15 @@ import {
 import { ProviderError, safeProviderMessage, type TranslationAdapter } from './adapter.js';
 import { TaskStore } from './store.js';
 import { DOCX_LIMITS, type DocxDocument, type DocxParagraph } from '../shared/docx.js';
+import {
+  PROFESSIONAL_LIMITS,
+  type ProfessionalState,
+  type ReviewEvent,
+  type TermApplicationPreview,
+  type TermRecord,
+  type TranslationContext,
+} from '../shared/professional.js';
+import { createSnapshot, resolveTerms, validateTermInput } from './terminology.js';
 
 export class ApiError extends Error {
   constructor(
@@ -141,6 +150,48 @@ function validateDocumentMapping(document: DocxDocument): DocxParagraph[] {
   if (!mappingIds.size) throw new ApiError(409, 'DOCX 没有可翻译的正文。', 'DOCX_EMPTY');
   return paragraphs.filter((p) => p.source.trim());
 }
+function projectContext(
+  body: Record<string, unknown>,
+  defaults = { project: '', context: '' },
+): { project: string; context: string } {
+  const project = body.project === undefined ? defaults.project : body.project;
+  const context = body.context === undefined ? defaults.context : body.context;
+  if (
+    typeof project !== 'string' ||
+    project.length > PROFESSIONAL_LIMITS.project ||
+    typeof context !== 'string' ||
+    context.length > PROFESSIONAL_LIMITS.context
+  ) {
+    throw new ApiError(
+      400,
+      '项目名称最多 80 字符，任务背景最多 2,000 字符。',
+      'INVALID_TASK_CONTEXT',
+    );
+  }
+  return { project: project.trim(), context: context.trim() };
+}
+function reviewEvent(task: Task, event: ReviewEvent): void {
+  if (!task.professional) return;
+  task.professional.review.events = [...task.professional.review.events, event].slice(-100);
+}
+function invalidateApprovals(task: Task, paragraphIds?: Set<string>): void {
+  if (!task.professional) return;
+  const selected = task.professional.review.approvals.filter(
+    (approval) => !paragraphIds || paragraphIds.has(approval.paragraphId),
+  );
+  for (const approval of selected) {
+    reviewEvent(task, {
+      type: 'invalidated',
+      paragraphId: approval.paragraphId,
+      revision: approval.revision,
+      snapshotId: approval.snapshotId,
+      at: new Date().toISOString(),
+    });
+  }
+  task.professional.review.approvals = task.professional.review.approvals.filter(
+    (approval) => paragraphIds && !paragraphIds.has(approval.paragraphId),
+  );
+}
 export class TaskService {
   private runs = new Map<string, Run>();
   constructor(
@@ -154,6 +205,223 @@ export class TaskService {
     const task = this.store.get(id);
     if (!task) throw new ApiError(404, '任务不存在。', 'NOT_FOUND');
     return task;
+  }
+  private initialProfessional(body: Record<string, unknown>): ProfessionalState {
+    const context = projectContext(body);
+    return {
+      snapshot: createSnapshot(this.store.getTermLibrary(), context.project, context.context),
+      snapshotHistory: [],
+      review: { findings: [], approvals: [], events: [] },
+    };
+  }
+  listTerms() {
+    return this.store.getTermLibrary();
+  }
+  createTerm(body: unknown): TermRecord {
+    const input = validateTermInput(body);
+    return this.store.mutateTermLibrary((library) => {
+      if (library.entries.length >= PROFESSIONAL_LIMITS.terms)
+        throw new ApiError(409, '术语库最多保存 200 条，请编辑或复用现有条目。', 'TERM_LIMIT');
+      const now = new Date().toISOString();
+      const record: TermRecord = {
+        ...input,
+        id: randomUUID(),
+        revision: 1,
+        createdAt: now,
+        updatedAt: now,
+      };
+      library.entries.push(record);
+      return record;
+    });
+  }
+  updateTerm(id: string, body: unknown): TermRecord {
+    if (!body || typeof body !== 'object' || Array.isArray(body))
+      throw new ApiError(400, '请提供完整术语与版本号。', 'INVALID_TERM');
+    const { expectedRevision, ...fields } = body as Record<string, unknown>;
+    if (!Number.isInteger(expectedRevision) || (expectedRevision as number) < 0)
+      throw new ApiError(400, '请提供有效术语版本号。', 'INVALID_TERM_REVISION');
+    const input = validateTermInput(fields);
+    return this.store.mutateTermLibrary((library) => {
+      const index = library.entries.findIndex((entry) => entry.id === id);
+      if (index < 0) throw new ApiError(404, '术语不存在。', 'TERM_NOT_FOUND');
+      const previous = library.entries[index];
+      if (previous.revision !== expectedRevision)
+        throw new ApiError(409, '术语已被更新，请刷新后重试。', 'TERM_REVISION_CONFLICT');
+      const record: TermRecord = {
+        ...input,
+        id,
+        revision: previous.revision + 1,
+        createdAt: previous.createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+      library.entries[index] = record;
+      return record;
+    });
+  }
+  previewTerminology(id: string, body: unknown): TermApplicationPreview {
+    const task = this.get(id);
+    if (this.runs.has(id))
+      throw new ApiError(409, '翻译进行中，请完成或取消后再预览应用术语。', 'TASK_BUSY');
+    if (!body || typeof body !== 'object' || Array.isArray(body))
+      throw new ApiError(400, '请提供有效任务背景。', 'INVALID_TASK_CONTEXT');
+    const context = projectContext(body as Record<string, unknown>, {
+      project: task.professional?.snapshot.project ?? '',
+      context: task.professional?.snapshot.context ?? '',
+    });
+    const library = this.store.getTermLibrary();
+    const snapshot = createSnapshot(library, context.project, context.context);
+    const oldEntries = new Map(
+      (task.professional?.snapshot.entries ?? []).map((entry) => [entry.id, entry]),
+    );
+    const nextEntries = new Map(snapshot.entries.map((entry) => [entry.id, entry]));
+    const changedSources = new Set<string>();
+    for (const entry of [...oldEntries.values(), ...nextEntries.values()]) {
+      if (JSON.stringify(oldEntries.get(entry.id)) !== JSON.stringify(nextEntries.get(entry.id)))
+        changedSources.add(entry.source);
+    }
+    const preview: TermApplicationPreview = {
+      token: randomUUID(),
+      taskRevision: task.revision ?? 0,
+      previousSnapshotId: task.professional?.snapshot.id ?? null,
+      snapshot,
+      changedSources: [...changedSources].sort(),
+      conflicts: task.paragraphs.flatMap((paragraph, index) =>
+        resolveTerms(snapshot, paragraph.source).conflicts.map((conflict) => ({
+          paragraphId: paragraph.id,
+          location: paragraph.location ?? `段落 ${index + 1}`,
+          conflict,
+        })),
+      ),
+      preservedEditedParagraphs: task.paragraphs.filter((paragraph) => paragraph.edited).length,
+    };
+    this.store.saveTermPreview({
+      taskId: id,
+      taskRevision: preview.taskRevision,
+      libraryVersion: library.version,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+      used: false,
+      preview,
+    });
+    return preview;
+  }
+  applyTerminology(id: string, body: unknown): Task {
+    if (!body || typeof body !== 'object' || Array.isArray(body))
+      throw new ApiError(400, '请先预览并明确确认应用术语。', 'CONFIRMATION_REQUIRED');
+    const { token, confirm } = body as Record<string, unknown>;
+    if (typeof token !== 'string' || !token || token.length > 100 || confirm !== true)
+      throw new ApiError(400, '请先预览并明确确认应用术语。', 'CONFIRMATION_REQUIRED');
+    if (this.runs.has(id))
+      throw new ApiError(409, '翻译进行中，无法应用新的术语快照。', 'TASK_BUSY');
+    return this.store.transaction(() => {
+      const task = this.get(id);
+      const record = this.store.getTermPreview(token);
+      if (!record || record.used)
+        throw new ApiError(409, '术语预览已失效或已应用，请重新预览。', 'PREVIEW_INVALID');
+      if (record.taskId !== id)
+        throw new ApiError(409, '该术语预览属于其他任务。', 'PREVIEW_TASK_MISMATCH');
+      if (record.expiresAt <= Date.now())
+        throw new ApiError(409, '术语预览已过期，请重新预览。', 'PREVIEW_EXPIRED');
+      if (
+        record.taskRevision !== (task.revision ?? 0) ||
+        record.preview.previousSnapshotId !== (task.professional?.snapshot.id ?? null)
+      )
+        throw new ApiError(409, '任务已变化，请重新预览术语后确认。', 'TASK_REVISION_CONFLICT');
+      if (
+        record.libraryVersion !== this.store.getTermLibrary().version ||
+        record.preview.snapshot.libraryVersion !== record.libraryVersion
+      )
+        throw new ApiError(409, '术语库已变化，请重新预览后确认。', 'TERM_LIBRARY_CHANGED');
+      const previous = task.professional;
+      if (previous && previous.snapshotHistory.length >= PROFESSIONAL_LIMITS.snapshotHistory)
+        throw new ApiError(
+          409,
+          '已保留 20 次旧术语快照，本轮不再追加；请保留现有记录并新建任务。',
+          'SNAPSHOT_HISTORY_LIMIT',
+        );
+      invalidateApprovals(task);
+      task.professional = {
+        snapshot: record.preview.snapshot,
+        snapshotHistory: previous ? [...previous.snapshotHistory, previous.snapshot] : [],
+        review: { findings: [], approvals: [], events: previous?.review.events ?? [] },
+      };
+      this.store.save(task);
+      this.store.markTermPreviewUsed(token);
+      return task;
+    });
+  }
+  confirmReview(id: string, body: unknown): Task {
+    const task = this.get(id);
+    if (!body || typeof body !== 'object' || Array.isArray(body))
+      throw new ApiError(400, '请提供段落、版本号与明确审核选择。', 'INVALID_REVIEW');
+    const { paragraphId, expectedRevision, snapshotId, confirmed } = body as Record<
+      string,
+      unknown
+    >;
+    if (
+      typeof paragraphId !== 'string' ||
+      !Number.isInteger(expectedRevision) ||
+      typeof snapshotId !== 'string' ||
+      !snapshotId ||
+      typeof confirmed !== 'boolean'
+    )
+      throw new ApiError(400, '请提供段落、版本号与明确审核选择。', 'INVALID_REVIEW');
+    const paragraph = task.paragraphs.find((paragraph) => paragraph.id === paragraphId);
+    if (!paragraph) throw new ApiError(404, '段落不存在。', 'NOT_FOUND');
+    if (
+      !task.professional ||
+      task.professional.snapshot.id !== snapshotId ||
+      paragraph.revision !== expectedRevision
+    )
+      throw new ApiError(
+        409,
+        '段落或术语快照已变化，请重新检查后确认。',
+        'REVIEW_REVISION_CONFLICT',
+      );
+    if (confirmed && (paragraph.status !== 'done' || !paragraph.translation.trim()))
+      throw new ApiError(409, '请完成并保存该段译文后再人工确认。', 'REVIEW_NOT_READY');
+    const existing = task.professional.review.approvals.find(
+      (approval) => approval.paragraphId === paragraphId,
+    );
+    if (
+      (confirmed &&
+        existing?.revision === paragraph.revision &&
+        existing.snapshotId === snapshotId) ||
+      (!confirmed && !existing)
+    )
+      return task;
+    task.professional.review.approvals = task.professional.review.approvals.filter(
+      (approval) => approval.paragraphId !== paragraphId,
+    );
+    if (confirmed)
+      task.professional.review.approvals.push({
+        paragraphId,
+        revision: paragraph.revision,
+        snapshotId,
+        confirmedAt: new Date().toISOString(),
+      });
+    reviewEvent(task, {
+      type: confirmed ? 'confirmed' : 'revoked',
+      paragraphId,
+      revision: paragraph.revision,
+      snapshotId,
+      at: new Date().toISOString(),
+    });
+    return this.store.save(task);
+  }
+  private translationContext(task: Task, index: number): TranslationContext {
+    const paragraph = task.paragraphs[index];
+    const snapshot = task.professional?.snapshot;
+    const matches = snapshot ? resolveTerms(snapshot, paragraph.source).matches : [];
+    const uniqueTerms = new Map(matches.map((match) => [match.entry.id, match.entry]));
+    return {
+      project: snapshot?.project ?? '',
+      context: snapshot?.context ?? '',
+      snapshotId: snapshot?.id ?? 'legacy-no-snapshot',
+      terms: [...uniqueTerms.values()],
+      location: paragraph.location ?? `段落 ${index + 1}`,
+      previousSource: task.paragraphs[index - 1]?.source.slice(0, 1000) ?? '',
+      nextSource: task.paragraphs[index + 1]?.source.slice(0, 1000) ?? '',
+    };
   }
   create(body: unknown): Task {
     if (!body || typeof body !== 'object')
@@ -184,6 +452,7 @@ export class TaskService {
       mode: this.adapter.mode,
       createdAt: now,
       updatedAt: now,
+      professional: this.initialProfessional(body as Record<string, unknown>),
       paragraphs: chunks.map((source) => ({
         id: randomUUID(),
         source,
@@ -210,9 +479,14 @@ export class TaskService {
     }
     const record = this.store.getImport(importId);
     if (!record) throw new ApiError(404, '预检查记录不存在，请重新上传 DOCX。', 'IMPORT_NOT_FOUND');
+    const context = projectContext(body as Record<string, unknown>);
     const existing = this.store.getTaskForImport(importId);
     if (existing) {
-      if (existing.style !== style) {
+      if (
+        existing.style !== style ||
+        (existing.professional?.snapshot.project ?? '') !== context.project ||
+        (existing.professional?.snapshot.context ?? '') !== context.context
+      ) {
         throw new ApiError(
           409,
           '该预检查记录已按其他文体创建任务，请重新上传。',
@@ -246,6 +520,7 @@ export class TaskService {
       createdAt: now,
       updatedAt: now,
       document,
+      professional: this.initialProfessional(body as Record<string, unknown>),
       paragraphs: mapped.map((p) => ({
         id: p.paragraphId!,
         source: p.source,
@@ -286,6 +561,7 @@ export class TaskService {
         '该段落已更新，请重新打开后再保存。您的草稿仍保留在编辑框中。',
         'REVISION_CONFLICT',
       );
+    invalidateApprovals(task, new Set([paragraphId]));
     p.translation = translation;
     p.edited = true;
     p.revision += 1;
@@ -332,6 +608,20 @@ export class TaskService {
         '没有待翻译段落。人工修改段落仅可明确选择后重译。',
         'NOTHING_TO_TRANSLATE',
       );
+    if (
+      task.professional &&
+      selected.some((paragraphId) => {
+        const paragraph = task.paragraphs.find((p) => p.id === paragraphId)!;
+        return resolveTerms(task.professional!.snapshot, paragraph.source).conflicts.length > 0;
+      })
+    ) {
+      throw new ApiError(
+        409,
+        '所选段落含未解决的术语冲突，请先检查术语规则并重新应用。',
+        'TERM_CONFLICT',
+      );
+    }
+    invalidateApprovals(task, new Set(selected));
     const controller = new AbortController();
     const run: Run = {
       controller,
@@ -435,13 +725,20 @@ export class TaskService {
         this.store.save(task);
         try {
           const translation = await this.callWithRetry(
-            { source: p.source, style: task.style, paragraphIndex: index, scenario },
+            {
+              source: p.source,
+              style: task.style,
+              paragraphIndex: index,
+              scenario,
+              professional: this.translationContext(task, index),
+            },
             run.controller.signal,
           );
           if (run.controller.signal.aborted) break;
           const current = this.get(id);
           const target = current.paragraphs.find((p) => p.id === paragraphId)!;
           if (target.revision === revision) {
+            invalidateApprovals(current, new Set([paragraphId]));
             target.translation = translation;
             target.revision += 1;
             target.edited = false;

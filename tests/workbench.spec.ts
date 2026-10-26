@@ -605,6 +605,7 @@ test('the config deadline also aborts a hanging response body and closes the str
 }) => {
   let recover = false;
   let requests = 0;
+  const firstStreamClosed = deferred();
   const hanging = new Set<ServerResponse>();
   const server = createServer((request, response) => {
     response.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5173');
@@ -615,13 +616,17 @@ test('the config deadline also aborts a hanging response body and closes the str
       return;
     }
     requests++;
+    const requestNumber = requests;
     response.setHeader('Content-Type', 'application/json');
     if (recover) {
       response.end(JSON.stringify(syntheticConfig));
       return;
     }
     hanging.add(response);
-    response.on('close', () => hanging.delete(response));
+    response.on('close', () => {
+      hanging.delete(response);
+      if (requestNumber === 1) firstStreamClosed.resolve();
+    });
     response.writeHead(200);
     response.write('{"mode":'); // Headers arrive; JSON body intentionally never finishes.
   });
@@ -637,7 +642,24 @@ test('the config deadline also aborts a hanging response body and closes the str
     await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
     const timeout = page.getByRole('alert').filter({ hasText: '读取服务状态超时，请稍后重试。' });
     await expect(timeout).toBeVisible({ timeout: 8000 });
-    await expect.poll(() => hanging.size).toBe(0);
+    // The empty set is transient before the next scheduled request. Observe the
+    // first close directly so sampling cannot miss it. Keep the same 8s bound
+    // and the exact connection/request-count assertions below.
+    let deadline: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        firstStreamClosed.promise,
+        new Promise<never>((_resolve, reject) => {
+          deadline = setTimeout(
+            () => reject(new Error('First config stream did not close within 8s')),
+            8000,
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(deadline);
+    }
+    expect(hanging.size).toBe(0);
     expect(requests).toBe(1);
     recover = true;
     await expect(page.getByRole('button', { name: '创建并翻译', exact: true })).toBeEnabled();

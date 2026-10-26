@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { DOCX_LIMITS } from '../shared/docx.js';
 import { DocxError, parseDocx } from './docx/parse.js';
 import { ExportError, exportDocx } from './docx/export.js';
+import { createProviderSettingsRouter } from './provider-settings.js';
+import { TermValidationError } from './terminology.js';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 function uploadFilename(header: string | undefined): string {
@@ -94,6 +96,7 @@ export function createApp(service: TaskService, extraOrigin?: string) {
     },
   );
   app.use(express.json({ limit: '256kb' }));
+  app.use('/api/provider-settings', createProviderSettingsRouter(service.store));
   app.get('/api/config', (_req, res) =>
     res.json({
       mode: service.adapter.mode,
@@ -102,6 +105,20 @@ export function createApp(service: TaskService, extraOrigin?: string) {
       maxCharacters: MAX_CHARACTERS,
       maxParagraphs: MAX_PARAGRAPHS,
     }),
+  );
+  app.get('/api/terminology', (_req, res) => res.json(service.listTerms()));
+  app.post('/api/terminology', (req, res) => res.status(201).json(service.createTerm(req.body)));
+  app.patch('/api/terminology/:id', (req, res) =>
+    res.json(service.updateTerm(req.params.id, req.body)),
+  );
+  app.post('/api/tasks/:id/terminology-preview', (req, res) =>
+    res.json(service.previewTerminology(req.params.id, req.body)),
+  );
+  app.post('/api/tasks/:id/terminology-apply', (req, res) =>
+    res.json(service.applyTerminology(req.params.id, req.body)),
+  );
+  app.post('/api/tasks/:id/review', (req, res) =>
+    res.json(service.confirmReview(req.params.id, req.body)),
   );
   app.get('/api/tasks', (_req, res) => res.json(service.store.list()));
   app.post('/api/tasks', (req, res) => res.status(201).json(service.create(req.body)));
@@ -143,7 +160,12 @@ export function createApp(service: TaskService, extraOrigin?: string) {
   }
   const onError: ErrorRequestHandler = (error: unknown, _req, res, next) => {
     void next; // Keep Express error middleware arity without reflecting internal errors.
-    if (error instanceof ApiError || error instanceof DocxError || error instanceof ExportError) {
+    if (
+      error instanceof ApiError ||
+      error instanceof DocxError ||
+      error instanceof ExportError ||
+      error instanceof TermValidationError
+    ) {
       res.status(error.status).json({ error: error.message, code: error.code });
       return;
     }

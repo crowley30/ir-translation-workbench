@@ -1,0 +1,127 @@
+{
+  "id": "dc958abc-1237-4177-a6c0-b00637f7bc6a",
+  "title": "synthetic-professional.docx",
+  "style": "business",
+  "status": "completed",
+  "mode": "mock",
+  "createdAt": "2026-10-26T05:07:37.023Z",
+  "updatedAt": "2026-10-26T05:07:39.369Z",
+  "document": {
+    "version": 1,
+    "filename": "synthetic-professional.docx",
+    "blocks": [
+      {
+        "kind": "table",
+        "id": "b0001",
+        "rows": [
+          {
+            "id": "b0001-r001",
+            "cells": [
+              {
+                "id": "b0001-r001-c001",
+                "paragraphs": [
+                  {
+                    "kind": "paragraph",
+                    "id": "b0001-r001-c001-p001",
+                    "paragraphId": "p0001",
+                    "source": "SyntheticProtocoligfbbbafadadegabbhgcbdcejcejcadh revenue was USD 12 million on 2026-10-26.",
+                    "location": "表格 1 / 第 1 行第 1 列 / 第 1 段"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "professional": {
+    "snapshot": {
+      "version": 1,
+      "id": "c0b89ebb-6833-498b-9014-f40fc7a2d8cb",
+      "createdAt": "2026-10-26T05:07:39.168Z",
+      "libraryVersion": 22,
+      "project": "合成项目-0a808b6d-e6bb-46",
+      "context": "NEW_BACKGROUND_DO_NOT_EXPORT_94ad6fa0-962f-40ef-a6f9-da6d27a47e90",
+      "entries": [
+        {
+          "layer": "project",
+          "project": "合成项目-0a808b6d-e6bb-46",
+          "source": "SyntheticProtocoligfbbbafadadegabbhgcbdcejcejcadh",
+          "target": "项目收入",
+          "retainSource": false,
+          "note": "合成浏览器测试词条，非行业标准。",
+          "priority": 50,
+          "enabled": true,
+          "caseSensitive": false,
+          "alternatives": [],
+          "id": "267e290b-420c-4d1c-8ec2-1dab29cebe5d",
+          "revision": 1,
+          "createdAt": "2026-10-26T05:07:35.807Z",
+          "updatedAt": "2026-10-26T05:07:35.807Z"
+        }
+      ]
+    },
+    "snapshotHistory": [
+      {
+        "version": 1,
+        "id": "b385f27b-2c35-4353-a264-92f731658adb",
+        "createdAt": "2026-10-26T05:07:37.024Z",
+        "libraryVersion": 22,
+        "project": "合成项目-0a808b6d-e6bb-46",
+        "context": "SYNTHETIC_CONTEXT_DO_NOT_EXPORT_dc88dd5e-2f83-4d43-a785-04123fb31425",
+        "entries": [
+          {
+            "layer": "project",
+            "project": "合成项目-0a808b6d-e6bb-46",
+            "source": "SyntheticProtocoligfbbbafadadegabbhgcbdcejcejcadh",
+            "target": "项目收入",
+            "retainSource": false,
+            "note": "合成浏览器测试词条，非行业标准。",
+            "priority": 50,
+            "enabled": true,
+            "caseSensitive": false,
+            "alternatives": [],
+            "id": "267e290b-420c-4d1c-8ec2-1dab29cebe5d",
+            "revision": 1,
+            "createdAt": "2026-10-26T05:07:35.807Z",
+            "updatedAt": "2026-10-26T05:07:35.807Z"
+          }
+        ]
+      }
+    ],
+    "review": {
+      "findings": [],
+      "approvals": [],
+      "events": [
+        {
+          "type": "confirmed",
+          "paragraphId": "p0001",
+          "revision": 2,
+          "snapshotId": "b385f27b-2c35-4353-a264-92f731658adb",
+          "at": "2026-10-26T05:07:38.579Z"
+        },
+        {
+          "type": "invalidated",
+          "paragraphId": "p0001",
+          "revision": 2,
+          "snapshotId": "b385f27b-2c35-4353-a264-92f731658adb",
+          "at": "2026-10-26T05:07:38.810Z"
+        }
+      ]
+    }
+  },
+  "paragraphs": [
+    {
+      "id": "p0001",
+      "source": "SyntheticProtocoligfbbbafadadegabbhgcbdcejcejcadh revenue was USD 12 million on 2026-10-26.",
+      "location": "表格 1 / 第 1 行第 1 列 / 第 1 段",
+      "translation": "项目收入为1200万美元，日期为2026年10月26日；人工校订 & <核对>。",
+      "revision": 3,
+      "edited": true,
+      "status": "done",
+      "error": null
+    }
+  ],
+  "revision": 9
+}

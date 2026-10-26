@@ -12,6 +12,8 @@ interface Props {
   busy: boolean;
   onBusyChange: (busy: boolean) => void;
   onCreated: (task: Task, mode: 'mock' | 'real', scenario: MockScenario) => void;
+  project?: string;
+  context?: string;
 }
 async function responseJson<T>(response: Response): Promise<T> {
   const data = await response.json().catch(() => null);
@@ -76,6 +78,8 @@ export default function DocxImport({
   busy,
   onBusyChange,
   onCreated,
+  project = '',
+  context = '',
 }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -187,7 +191,13 @@ export default function DocxImport({
       const response = await fetch('/api/tasks/docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ importId: result.id, style, acknowledgeWarnings: acknowledged }),
+        body: JSON.stringify({
+          importId: result.id,
+          style,
+          acknowledgeWarnings: acknowledged,
+          ...(project ? { project } : {}),
+          ...(context ? { context } : {}),
+        }),
         signal: abort.signal,
       });
       const created = await responseJson<Task>(response);

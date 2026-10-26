@@ -1,0 +1,171 @@
+{
+  "scope": "Synthetic exports only; LibreOffice rendering does not establish Microsoft Word compatibility, page fidelity, or translation quality.",
+  "commands": [
+    {
+      "command": ["soffice", "--version"],
+      "exitCode": 0,
+      "seconds": 0.318,
+      "stdout": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5\n\n",
+      "stderr": ""
+    },
+    {
+      "command": ["pdftoppm", "-v"],
+      "exitCode": 0,
+      "seconds": 0.032,
+      "stdout": "",
+      "stderr": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC\n"
+    },
+    {
+      "command": [
+        "soffice",
+        "-env:UserInstallation=file:///tmp/ir-docx-render-bhqywavb/chinese/profile",
+        "--headless",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        "/tmp/ir-docx-render-bhqywavb/chinese",
+        "/tmp/ir-p3-exports/chinese.docx"
+      ],
+      "exitCode": 0,
+      "seconds": 1.024,
+      "stdout": "convert /tmp/ir-p3-exports/chinese.docx as a Writer document -> /tmp/ir-docx-render-bhqywavb/chinese/chinese.pdf using filter : writer_pdf_Export\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-png",
+        "-r",
+        "110",
+        "/tmp/ir-p3-render/chinese.pdf",
+        "/tmp/ir-p3-render/chinese"
+      ],
+      "exitCode": 0,
+      "seconds": 0.105,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "soffice",
+        "-env:UserInstallation=file:///tmp/ir-docx-render-bhqywavb/bilingual/profile",
+        "--headless",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        "/tmp/ir-docx-render-bhqywavb/bilingual",
+        "/tmp/ir-p3-exports/bilingual.docx"
+      ],
+      "exitCode": 0,
+      "seconds": 0.699,
+      "stdout": "convert /tmp/ir-p3-exports/bilingual.docx as a Writer document -> /tmp/ir-docx-render-bhqywavb/bilingual/bilingual.pdf using filter : writer_pdf_Export\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-png",
+        "-r",
+        "110",
+        "/tmp/ir-p3-render/bilingual.pdf",
+        "/tmp/ir-p3-render/bilingual"
+      ],
+      "exitCode": 0,
+      "seconds": 0.135,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "files": [
+    {
+      "sourceFilename": "chinese.docx",
+      "sourceBytes": 10515,
+      "pdf": "chinese.pdf",
+      "pages": 1,
+      "pageSizesPt": [[595.303955078125, 841.8897705078125]],
+      "fonts": [
+        "BAAAAA+LiberationSans",
+        "CAAAAA+NotoSansCJKsc-Regular",
+        "DAAAAA+NotoSansCJKsc-Regular",
+        "EAAAAA+LiberationSans"
+      ],
+      "structure": [
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "[模拟文档·非实际翻译] 中文译文。包含模拟占位内容，请勿作为正式材料使用。"
+        },
+        {
+          "kind": "table",
+          "rows": [[["项目收入为1200万美元，日期为2026年10月26日；人工校订 & <核对>。"]]]
+        }
+      ],
+      "nonemptyParagraphs": 2,
+      "missingVisibleParagraphs": [],
+      "requiredMarker": "模拟",
+      "requiredMarkerVisible": true,
+      "savedTaskComparison": {
+        "taskId": "dc958abc-1237-4177-a6c0-b00637f7bc6a",
+        "mode": "chinese",
+        "structuralParagraphs": 1,
+        "translatableParagraphs": 1,
+        "expectedParagraphsAfterNotice": 1,
+        "actualParagraphsAfterNotice": 1,
+        "exactParagraphOrderAndText": true,
+        "humanEditedIdsAndRevisions": {
+          "p0001": 3
+        }
+      }
+    },
+    {
+      "sourceFilename": "bilingual.docx",
+      "sourceBytes": 10637,
+      "pdf": "bilingual.pdf",
+      "pages": 1,
+      "pageSizesPt": [[595.303955078125, 841.8897705078125]],
+      "fonts": [
+        "BAAAAA+LiberationSans",
+        "CAAAAA+NotoSansCJKsc-Regular",
+        "DAAAAA+NotoSansCJKsc-Regular",
+        "EAAAAA+LiberationSans"
+      ],
+      "structure": [
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "[模拟文档·非实际翻译] 中英对照，每组先原文后译文。包含模拟占位内容，请勿作为正式材料使用。"
+        },
+        {
+          "kind": "table",
+          "rows": [
+            [
+              [
+                "SyntheticProtocoligfbbbafadadegabbhgcbdcejcejcadh revenue was USD 12 million on 2026-10-26.",
+                "项目收入为1200万美元，日期为2026年10月26日；人工校订 & <核对>。"
+              ]
+            ]
+          ]
+        }
+      ],
+      "nonemptyParagraphs": 3,
+      "missingVisibleParagraphs": [],
+      "requiredMarker": "模拟",
+      "requiredMarkerVisible": true,
+      "savedTaskComparison": {
+        "taskId": "dc958abc-1237-4177-a6c0-b00637f7bc6a",
+        "mode": "bilingual",
+        "structuralParagraphs": 1,
+        "translatableParagraphs": 1,
+        "expectedParagraphsAfterNotice": 2,
+        "actualParagraphsAfterNotice": 2,
+        "exactParagraphOrderAndText": true,
+        "humanEditedIdsAndRevisions": {
+          "p0001": 3
+        }
+      }
+    }
+  ],
+  "libreOfficeVersion": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+  "popplerVersion": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC",
+  "exitCode": 0
+}

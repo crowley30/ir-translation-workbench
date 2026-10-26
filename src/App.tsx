@@ -4,6 +4,12 @@ import { MAX_CHARACTERS, MAX_PARAGRAPHS } from '../shared/types';
 import { api } from './api';
 import { startPolling } from './polling';
 import DocxImport from './DocxImport';
+import TerminologyManager from './TerminologyManager';
+import TaskProfessional from './TaskProfessional';
+import ParagraphReview from './ParagraphReview';
+import ProviderSettings from './ProviderSettings';
+import { PROFESSIONAL_LIMITS } from '../shared/professional';
+import './professional.css';
 
 const STATUS: Record<Task['status'], string> = {
   draft: '待翻译',
@@ -33,6 +39,8 @@ export default function App() {
   const [task, setTask] = useState<Task | null>(null);
   const [input, setInput] = useState('');
   const [style, setStyle] = useState<Style>('business');
+  const [project, setProject] = useState('');
+  const [context, setContext] = useState('');
   const [scenario, setScenario] = useState<MockScenario>('normal');
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [error, setError] = useState('');
@@ -57,7 +65,9 @@ export default function App() {
     setTask((previous) => {
       if (
         previous?.id === data.id &&
-        (previous.updatedAt > data.updatedAt ||
+        ((previous.revision !== undefined && data.revision !== undefined
+          ? previous.revision > data.revision
+          : previous.updatedAt > data.updatedAt) ||
           previous.paragraphs.some(
             (p) => p.revision > (data.paragraphs.find((next) => next.id === p.id)?.revision ?? -1),
           ))
@@ -185,12 +195,17 @@ export default function App() {
     paragraphCount > (config?.maxParagraphs ?? MAX_PARAGRAPHS);
   function createTask() {
     if (actionLock.current || docxBusy || !config?.ready || !input.trim() || overLimit) return;
-    const submitted = { text: input, style, scenario, mode: config.mode };
+    const submitted = { text: input, style, scenario, mode: config.mode, project, context };
     setCreating(true);
     void action(async () => {
       const created = await api<Task>('/tasks', {
         method: 'POST',
-        body: JSON.stringify({ text: submitted.text, style: submitted.style }),
+        body: JSON.stringify({
+          text: submitted.text,
+          style: submitted.style,
+          ...(submitted.project ? { project: submitted.project } : {}),
+          ...(submitted.context ? { context: submitted.context } : {}),
+        }),
       });
       if (created.mode !== submitted.mode || latestConfig.current?.mode !== submitted.mode) {
         setNotice('服务模式已变化，原文草稿已保留；已创建的任务可从列表打开，请确认模式后再继续。');
@@ -528,6 +543,12 @@ export default function App() {
                   正在逐段处理，您可以编辑并保存译文。人工保存会受到保护，取消后可继续未完成的段落。
                 </div>
               )}
+              <TaskProfessional
+                key={task.id}
+                task={task}
+                disabled={posting || !!currentDirty}
+                onChanged={acceptTask}
+              />
               <div className="review-columns">
                 <span>
                   英文原文 <small>SOURCE</small>
@@ -600,6 +621,13 @@ export default function App() {
                             重译本段
                           </button>
                         </div>
+                        <ParagraphReview
+                          task={task}
+                          paragraphId={p.id}
+                          dirty={!!draft}
+                          disabled={posting}
+                          onChanged={acceptTask}
+                        />
                       </div>
                     </section>
                   );
@@ -690,6 +718,32 @@ export default function App() {
                     正在创建任务，原文和选项暂时锁定；创建失败会保留原文。
                   </p>
                 )}
+                <div className="professional-compose-fields">
+                  <label htmlFor="project-name">项目名称（可选）</label>
+                  <input
+                    id="project-name"
+                    aria-label="项目名称"
+                    value={project}
+                    maxLength={PROFESSIONAL_LIMITS.project}
+                    disabled={creating || docxBusy}
+                    onChange={(event) => setProject(event.target.value)}
+                    placeholder="匹配该项目的术语，不会自动改写历史任务"
+                  />
+                  <label htmlFor="translation-context">翻译背景（可选）</label>
+                  <textarea
+                    id="translation-context"
+                    aria-label="翻译背景"
+                    value={context}
+                    maxLength={PROFESSIONAL_LIMITS.context}
+                    disabled={creating || docxBusy}
+                    onChange={(event) => setContext(event.target.value)}
+                    placeholder="收件人、材料用途、技术或基金语境；作为资料传给服务"
+                  />
+                  <p className="field-help">
+                    文本与 DOCX
+                    共用此项目和背景，创建时保存术语快照。全局库的后续修改不会改变历史任务。
+                  </p>
+                </div>
                 {overLimit && (
                   <p role="alert" className="field-error">
                     内容超出上限，请缩短文本后再试。
@@ -723,6 +777,8 @@ export default function App() {
               <DocxImport
                 key={importEpoch}
                 style={style}
+                project={project}
+                context={context}
                 scenario={scenario}
                 mode={config?.mode ?? null}
                 ready={!!config?.ready}
@@ -747,10 +803,12 @@ export default function App() {
                 </div>
               </div>
               <div className="next-note">
-                <span>下一阶段</span> 分层术语和数字检查将在后续阶段开放。
+                <span>专业审校</span> 术语与规则提示辅助核对，不能替代人工判断或专业翻译质量评估。
               </div>
             </>
           )}
+          <TerminologyManager disabled={posting || creating || docxBusy} />
+          <ProviderSettings disabled={posting || creating || docxBusy} />
           {config?.mode === 'mock' && (
             <details className="dev-panel">
               <summary>模拟测试设置</summary>
