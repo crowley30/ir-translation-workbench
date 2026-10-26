@@ -1,8 +1,24 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
-import type { Task, MockScenario } from '../shared/types';
+import { createServer, type ServerResponse } from 'node:http';
+import type { Task, MockScenario, ServiceConfig } from '../shared/types';
 
 const synthetic =
   'Dear investor, our synthetic robotics fund invested USD 12 million in 2026.\n\nThis fictional company develops AI models for warehouse robots.';
+
+const syntheticConfig: ServiceConfig = {
+  mode: 'mock',
+  ready: true,
+  label: '合成模拟配置',
+  maxCharacters: 20000,
+  maxParagraphs: 100,
+};
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
 
 async function taskFromApi(request: APIRequestContext, id: string): Promise<Task> {
   const response = await request.get(`/api/tasks/${id}`);
@@ -520,6 +536,272 @@ test('a successful save keeps its notice while a list-read error appears and the
   await expect(savedNotice).toBeVisible();
   expect((await taskFromApi(request, id)).paragraphs[0].edited).toBe(true);
   await expect(first).toHaveValue('人工保存成功，列表读取暂时失败时也不能丢失。');
+});
+
+test('slow startup config responses longer than the poll interval are accepted without overlapping requests', async ({
+  page,
+}) => {
+  let started = 0;
+  let fulfilled = 0;
+  let inFlight = 0;
+  let maxInFlight = 0;
+  await page.route('**/api/config', async (route) => {
+    started++;
+    inFlight++;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    try {
+      // Deliberately exceed the former 1500ms setInterval cadence.
+      await new Promise<void>((resolve) => setTimeout(resolve, 1800));
+      await route.fulfill({ json: syntheticConfig });
+      fulfilled++;
+    } finally {
+      inFlight--;
+    }
+  });
+  await page.goto('/');
+  await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+  const create = page.getByRole('button', { name: '创建并翻译', exact: true });
+  await expect(create).toBeDisabled();
+  await expect(create).toBeEnabled();
+  await expect(page.getByText('模拟模式', { exact: true })).toBeVisible();
+  await expect.poll(() => fulfilled).toBe(2);
+  expect(started).toBe(2);
+  expect(maxInFlight).toBe(1);
+});
+
+test('a hanging config request times out, aborts transport, then recovers on the next serial attempt', async ({
+  page,
+}) => {
+  let recover = false;
+  let started = 0;
+  let aborted = 0;
+  const release = deferred();
+  page.on('requestfailed', (request) => {
+    if (new URL(request.url()).pathname === '/api/config') aborted++;
+  });
+  await page.route('**/api/config', async (route) => {
+    started++;
+    if (recover) return route.fulfill({ json: syntheticConfig });
+    await release.promise;
+    await route.fulfill({ json: syntheticConfig }).catch(() => {});
+  });
+  await page.goto('/');
+  await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+  const create = page.getByRole('button', { name: '创建并翻译', exact: true });
+  await expect(create).toBeDisabled();
+  const timeout = page.getByRole('alert').filter({ hasText: '读取服务状态超时，请稍后重试。' });
+  await expect(timeout).toBeVisible({ timeout: 8000 });
+  expect(started).toBe(1);
+  await expect.poll(() => aborted).toBe(1);
+  recover = true;
+  release.resolve();
+  await expect(create).toBeEnabled();
+  await expect(timeout).toHaveCount(0);
+  expect(started).toBe(2);
+});
+
+test('the config deadline also aborts a hanging response body and closes the streaming connection', async ({
+  page,
+}) => {
+  let recover = false;
+  let requests = 0;
+  const hanging = new Set<ServerResponse>();
+  const server = createServer((request, response) => {
+    response.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5173');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (request.method === 'OPTIONS') {
+      response.writeHead(204);
+      response.end();
+      return;
+    }
+    requests++;
+    response.setHeader('Content-Type', 'application/json');
+    if (recover) {
+      response.end(JSON.stringify(syntheticConfig));
+      return;
+    }
+    hanging.add(response);
+    response.on('close', () => hanging.delete(response));
+    response.writeHead(200);
+    response.write('{"mode":'); // Headers arrive; JSON body intentionally never finishes.
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  if (!address || typeof address === 'string')
+    throw new Error('Synthetic stream server did not bind');
+  try {
+    await page.route('**/api/config', (route) =>
+      route.continue({ url: `http://127.0.0.1:${address.port}/config` }),
+    );
+    await page.goto('/');
+    await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+    const timeout = page.getByRole('alert').filter({ hasText: '读取服务状态超时，请稍后重试。' });
+    await expect(timeout).toBeVisible({ timeout: 8000 });
+    await expect.poll(() => hanging.size).toBe(0);
+    expect(requests).toBe(1);
+    recover = true;
+    await expect(page.getByRole('button', { name: '创建并翻译', exact: true })).toBeEnabled();
+    await expect(timeout).toHaveCount(0);
+    expect(requests).toBe(2);
+  } finally {
+    for (const response of hanging) response.destroy();
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
+test('consecutive config 503 responses are shown in order before a later success clears the error', async ({
+  page,
+}) => {
+  let attempts = 0;
+  await page.route('**/api/config', async (route) => {
+    attempts++;
+    if (attempts <= 2)
+      return route.fulfill({ status: 503, json: { error: `合成连续配置故障 ${attempts}` } });
+    await route.fulfill({ json: syntheticConfig });
+  });
+  await page.goto('/');
+  await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+  await expect(page.getByRole('alert').filter({ hasText: '合成连续配置故障 1' })).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: '合成连续配置故障 2' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '创建并翻译', exact: true })).toBeEnabled();
+  await expect(page.getByRole('alert').filter({ hasText: '合成连续配置故障' })).toHaveCount(0);
+  expect(attempts).toBe(3);
+});
+
+for (const late of ['success', 'failure'] as const) {
+  test(`switching tasks aborts a pending old detail read and ignores its late ${late}`, async ({
+    page,
+    request,
+  }) => {
+    const oldResponse = await request.post('/api/tasks', {
+      data: { text: 'Old synthetic task source.', style: 'business', title: '合成旧任务' },
+    });
+    const oldTask = (await oldResponse.json()) as Task;
+    const nextResponse = await request.post('/api/tasks', {
+      data: { text: 'New synthetic task source.', style: 'faithful', title: '合成新任务' },
+    });
+    const nextTask = (await nextResponse.json()) as Task;
+    const entered = deferred();
+    const release = deferred();
+    const settled = deferred();
+    let oldRequests = 0;
+    let nextRequests = 0;
+    let aborted = false;
+    page.on('request', (req) => {
+      if (new URL(req.url()).pathname === `/api/tasks/${nextTask.id}`) nextRequests++;
+    });
+    page.on('requestfailed', (req) => {
+      if (new URL(req.url()).pathname === `/api/tasks/${oldTask.id}`) aborted = true;
+    });
+    await page.route(`**/api/tasks/${oldTask.id}`, async (route) => {
+      oldRequests++;
+      entered.resolve();
+      await release.promise;
+      try {
+        await route.fulfill(
+          late === 'success'
+            ? { json: oldTask }
+            : { status: 503, json: { error: '合成旧任务延迟错误，不应显示。' } },
+        );
+      } catch {
+        /* A disposed native fetch can no longer receive this synthetic late result. */
+      } finally {
+        settled.resolve();
+      }
+    });
+    await page.goto('/');
+    await page.locator(`a[href="?task=${oldTask.id}"]`).click();
+    await entered.promise;
+    await page.locator(`a[href="?task=${nextTask.id}"]`).click();
+    await expect(page.getByRole('heading', { name: nextTask.title, exact: true })).toBeVisible();
+    await expect.poll(() => aborted).toBe(true);
+    release.resolve();
+    await settled.promise;
+    await expect.poll(() => nextRequests).toBeGreaterThanOrEqual(2);
+    await expect(page.getByRole('heading', { name: nextTask.title, exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: oldTask.title, exact: true })).toHaveCount(0);
+    await expect(page.getByRole('alert').filter({ hasText: '合成旧任务延迟错误' })).toHaveCount(0);
+    expect(oldRequests).toBe(1);
+  });
+}
+
+test('reload and full document navigation close pending config streams without accumulating requests', async ({
+  page,
+}) => {
+  let hang = false;
+  let requests = 0;
+  let closed = 0;
+  let maxHanging = 0;
+  let listReads = 0;
+  const hanging = new Set<ServerResponse>();
+  const server = createServer((request, response) => {
+    response.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5173');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (request.method === 'OPTIONS') {
+      response.writeHead(204);
+      response.end();
+      return;
+    }
+    requests++;
+    response.setHeader('Content-Type', 'application/json');
+    if (!hang) {
+      response.end(JSON.stringify(syntheticConfig));
+      return;
+    }
+    hanging.add(response);
+    maxHanging = Math.max(maxHanging, hanging.size);
+    response.on('close', () => {
+      hanging.delete(response);
+      closed++;
+    });
+    response.writeHead(200);
+    response.write('{"mode":');
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  if (!address || typeof address === 'string')
+    throw new Error('Synthetic navigation stream server did not bind');
+  try {
+    await page.route('**/api/config', (route) =>
+      route.continue({ url: `http://127.0.0.1:${address.port}/config` }),
+    );
+    page.on('request', (req) => {
+      if (new URL(req.url()).pathname === '/api/tasks' && req.method() === 'GET') listReads++;
+    });
+    await page.goto('/');
+    await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+    const create = page.getByRole('button', { name: '创建并翻译', exact: true });
+    await expect(create).toBeEnabled();
+    hang = true;
+    await expect.poll(() => hanging.size).toBe(1);
+    const readsAtHold = listReads;
+    // List polling continues while a real config response body is still pending.
+    await expect.poll(() => listReads).toBeGreaterThanOrEqual(readsAtHold + 2);
+    expect(requests).toBe(2); // Initial read and one pending read; no interval overlap.
+    hang = false;
+    await page.reload();
+    await expect.poll(() => closed).toBe(1);
+    await expect.poll(() => hanging.size).toBe(0);
+    await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+    await expect(create).toBeEnabled();
+    hang = true;
+    await expect.poll(() => hanging.size).toBe(1);
+    await page.goto('about:blank');
+    await expect.poll(() => closed).toBe(2);
+    await expect.poll(() => hanging.size).toBe(0);
+    hang = false;
+    await page.goto('/');
+    await page.getByLabel('输入英文', { exact: true }).fill(synthetic);
+    await expect(create).toBeEnabled();
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    expect(requests).toBe(5); // Two normal document starts, two cancelled reads, final normal start.
+    expect(maxHanging).toBe(1);
+  } finally {
+    for (const response of hanging) response.destroy();
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
 });
 
 for (const scenario of ['timeout', 'rate-limit', 'server-error', 'malformed', 'partial'] as const) {

@@ -1,0 +1,190 @@
+P0/P1 polling starvation and empty build rework — 2026-10-26 UTC
+Baseline: e98657e9c8dc76c247c2c30b1a212195d6edb1a0.
+Scope: completion-based independent automatic reads, cancellation/deadlines/lifecycle; empty dist must fail.
+Synthetic data, mock provider and local HTTP fixtures only; no paid or real provider requests.
+
+COMMAND: npm test
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test
+> vitest run && npm run test:public
+
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+
+ Test Files  4 passed (4)
+      Tests  123 passed (123)
+   Start at  02:43:20
+   Duration  2.74s (tests 87%, import 9%, transform 3%, worker 1%)
+
+
+> ir-translation-workbench@0.1.0 test:public
+> node --test scripts/check-public.test.mjs
+
+✔ empty staged diff still scans HEAD, index and working files (176.664151ms)
+✔ rejects synthetic credential in tracked worktree when staging is empty (155.480366ms)
+✔ checks complete staged snapshots even after worktree cleanup (143.293607ms)
+✔ checks nonignored untracked intended files and runtime artifacts (124.295173ms)
+✔ base range scans intermediate committed blobs removed before HEAD (280.545647ms)
+✔ client build still requires separation from provider config and credentials (139.31447ms)
+✔ missing build or invalid base never reports success (191.516235ms)
+✔ refuses success when the repository scan scope is empty (124.650964ms)
+✔ empty dist never reports a successful client build scan (125.503667ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1567.039357
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run build
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 32 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB │ gzip:  0.33 kB
+dist/assets/index-C9Pfg_4d.css   12.66 kB │ gzip:  3.65 kB
+dist/assets/index-AXEaV3GJ.js   239.91 kB │ gzip: 75.86 kB
+✓ built in 1.56s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm_config_cache=/tmp/ir-npm-cache npm audit
+EXIT CODE: 0
+found 0 vulnerabilities
+
+COMMAND: npm run lint
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 lint
+> eslint .
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run typecheck
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 typecheck
+> tsc --noEmit
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run format:check
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: git diff --check
+EXIT CODE: 0
+
+REVIEW: lifecycle helper10/10 unit cases pass; independent read-only review found no blocker.
+Initial browser run exited1,22/23 passed: navigation fixture paused in Playwright routing before network transport, so requestfailed was not observable on document navigation.
+Replaced navigation fixture with real localhost streaming HTTP and asserted server connection closure, independent list polling and bounded pending responses; targeted1/1 passed in11.8s. No product change for this test fixture correction.
+Full browser rerun recorded below after completion.
+
+Automatic poll timeout5000ms covers fetch and response body. Next attempt only schedules after settlement plus1500ms(config/list) or700ms(detail). This deadline is for automatic read polls, not mutation or explicit reload requests.
+No dependencies changed; npm ci not rerun; earlier clean install evidence remains in checks.txt.
+
+COMMAND: npm run test:e2e
+EXIT CODE: 0
+REPORT: 23 expected,0 unexpected,0 flaky,0 skipped;103425.623ms
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test
+
+[WebServer] (node:15184) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:15197) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 23 tests using 1 worker
+
+(node:15269) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/workbench.spec.ts:58:1 › input bounds, explicit simulation label, save/reopen and text export (3.5s)
+  ✓   2 [chromium] › tests/workbench.spec.ts:115:1 › local retranslation preserves other saved edits and edits made while response is pending (4.8s)
+  ✓   3 [chromium] › tests/workbench.spec.ts:141:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (2.7s)
+  ✓   4 [chromium] › tests/workbench.spec.ts:166:1 › newer typing during a pending save remains editable and saves with the rebased revision (3.0s)
+  ✓   5 [chromium] › tests/workbench.spec.ts:208:1 › a model response arriving before save requires acknowledgment before replacing the newer result (4.9s)
+  ✓   6 [chromium] › tests/workbench.spec.ts:240:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (2.0s)
+  ✓   7 [chromium] › tests/workbench.spec.ts:302:1 › a delayed failed create retains the original input and unlocks exactly one retry (1.7s)
+  ✓   8 [chromium] › tests/workbench.spec.ts:368:1 › a service mode change during create retains the original draft and does not auto-translate (2.4s)
+  ✓   9 [chromium] › tests/workbench.spec.ts:426:1 › a temporary config read failure is visible and clears after recovery without a reload (2.8s)
+  ✓  10 [chromium] › tests/workbench.spec.ts:450:1 › config recovery clears its own error while retaining a newer action failure (4.2s)
+  ✓  11 [chromium] › tests/workbench.spec.ts:486:1 › a successful save keeps its notice while a list-read error appears and then clears after recovery (3.9s)
+  ✓  12 [chromium] › tests/workbench.spec.ts:541:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests (6.6s)
+  ✓  13 [chromium] › tests/workbench.spec.ts:572:1 › a hanging config request times out, aborts transport, then recovers on the next serial attempt (7.8s)
+  ✓  14 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (7.6s)
+  ✓  15 [chromium] › tests/workbench.spec.ts:653:1 › consecutive config 503 responses are shown in order before a later success clears the error (4.0s)
+  ✓  16 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late success (1.9s)
+  ✓  17 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late failure (1.9s)
+  ✓  18 [chromium] › tests/workbench.spec.ts:729:1 › reload and full document navigation close pending config streams without accumulating requests (8.3s)
+  ✓  19 [chromium] › tests/workbench.spec.ts:808:3 › mock timeout: finite failure, visible state and recovery (10.9s)
+  ✓  20 [chromium] › tests/workbench.spec.ts:808:3 › mock rate-limit: finite failure, visible state and recovery (4.0s)
+  ✓  21 [chromium] › tests/workbench.spec.ts:808:3 › mock server-error: finite failure, visible state and recovery (4.2s)
+  ✓  22 [chromium] › tests/workbench.spec.ts:808:3 › mock malformed: finite failure, visible state and recovery (2.7s)
+  ✓  23 [chromium] › tests/workbench.spec.ts:808:3 › mock partial: finite failure, visible state and recovery (3.6s)
+
+  23 passed (1.7m)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+Full HTML report: /tmp/ir-poll-e2e-report/index.html (temporary,not committed).
+Initial failed navigation fixture run: /tmp/ir-poll-e2e-initial-failed.txt.
+
+COMMAND: npm run check:public -- --base a44ecb2
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD e98657e9c8dc76c247c2c30b1a212195d6edb1a0; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..e98657e9c8dc76c247c2c30b1a212195d6edb1a0.
+File snapshots: HEAD=37, index=40, worktree=40, history=51 across 2 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

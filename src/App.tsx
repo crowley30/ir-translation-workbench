@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MockScenario, ServiceConfig, Style, Task } from '../shared/types';
 import { MAX_CHARACTERS, MAX_PARAGRAPHS } from '../shared/types';
 import { api } from './api';
+import { startPolling } from './polling';
 
 const STATUS: Record<Task['status'], string> = {
   draft: '待翻译',
@@ -71,32 +72,30 @@ export default function App() {
     [acceptTask],
   );
   useEffect(() => {
-    let disposed = false;
-    let refreshVersion = 0;
-    const refresh = async () => {
-      const version = ++refreshVersion;
-      const results = await Promise.allSettled([api<ServiceConfig>('/config'), refreshList()]);
-      if (disposed || version !== refreshVersion) return;
-      if (results[0].status === 'fulfilled') {
-        latestConfig.current = results[0].value;
-        setConfig(results[0].value);
-      }
-      const message = (result: PromiseSettledResult<unknown>) =>
-        result.status === 'rejected'
-          ? result.reason instanceof Error
-            ? result.reason.message
-            : '无法连接服务，请重试。'
-          : undefined;
-      // Background recovery only clears the error for its own source, never a user action failure.
-      setConnectionErrors({ config: message(results[0]), tasks: message(results[1]) });
-    };
-    void refresh();
-    const timer = setInterval(() => void refresh(), 1500);
+    const stopConfig = startPolling({
+      request: (signal) => api<ServiceConfig>('/config', { signal }),
+      onSuccess: (value) => {
+        latestConfig.current = value;
+        setConfig(value);
+        setConnectionErrors((previous) => ({ ...previous, config: undefined }));
+      },
+      onError: (error) =>
+        setConnectionErrors((previous) => ({ ...previous, config: error.message })),
+    });
+    const stopTasks = startPolling({
+      request: (signal) => api<Task[]>('/tasks', { signal }),
+      onSuccess: (value) => {
+        setTasks(value);
+        setConnectionErrors((previous) => ({ ...previous, tasks: undefined }));
+      },
+      onError: (error) =>
+        setConnectionErrors((previous) => ({ ...previous, tasks: error.message })),
+    });
     return () => {
-      disposed = true;
-      clearInterval(timer);
+      stopConfig();
+      stopTasks();
     };
-  }, [refreshList]);
+  }, []);
   useEffect(() => {
     if (!selectedId) {
       setTask(null);
@@ -104,18 +103,20 @@ export default function App() {
       return;
     }
     setLoading(true);
-    refreshTask(selectedId)
-      .catch((e) => {
-        if (currentId.current === selectedId) setTaskReadError(e.message);
-      })
-      .finally(() => setLoading(false));
-    const timer = setInterval(() => {
-      refreshTask(selectedId).catch((e) => {
-        if (currentId.current === selectedId) setTaskReadError(e.message);
-      });
-    }, 700);
-    return () => clearInterval(timer);
-  }, [selectedId, refreshTask]);
+    return startPolling({
+      request: (signal) => api<Task>(`/tasks/${selectedId}`, { signal }),
+      onSuccess: (value) => {
+        acceptTask(value);
+        setTaskReadError('');
+        setLoading(false);
+      },
+      onError: (error) => {
+        setTaskReadError(error.message);
+        setLoading(false);
+      },
+      intervalMs: 700,
+    });
+  }, [selectedId, acceptTask]);
   useEffect(() => {
     const pop = () => {
       setSelectedId(taskFromUrl());

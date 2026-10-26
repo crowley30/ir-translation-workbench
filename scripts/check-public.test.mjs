@@ -120,3 +120,14 @@ test('refuses success when the repository scan scope is empty', () => {
     assert.match(result.stderr, /refusing an empty-scope success/);
   });
 });
+
+test('empty dist never reports a successful client build scan', () => {
+  fixture(({ directory, scan }) => {
+    rmSync(join(directory, 'dist', 'index.html'));
+    const result = scan();
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /client build=0/);
+    assert.match(result.stderr, /no client build files scanned; build required/);
+    assert.ok(!result.stdout.includes('PASS:'));
+  });
+});

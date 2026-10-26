@@ -173,6 +173,10 @@ try {
   else if (lstatSync(dist).isSymbolicLink())
     problems.push('dist: client build symlink; manual review required');
   else inspectDist(dist);
+  if (counts.clientBuild === 0)
+    problems.push(
+      'dist: no client build files scanned; build required before public-content check',
+    );
   if (counts.head + counts.index + counts.worktree + counts.history === 0)
     problems.push('no repository files scanned; refusing an empty-scope success');
 
