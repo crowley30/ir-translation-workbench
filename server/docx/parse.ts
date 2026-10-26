@@ -23,6 +23,7 @@ const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const R = 'http://schemas.openxmlformats.org/package/2006/relationships';
 const OFFICE_R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const CT = 'http://schemas.openxmlformats.org/package/2006/content-types';
+const W15 = 'http://schemas.microsoft.com/office/word/2012/wordml';
 interface XNode {
   uri: string;
   local: string;
@@ -35,6 +36,14 @@ interface Budget {
 }
 function a(node: XNode | undefined, local: string, uri = W): string | undefined {
   return node?.attrs.get(`${uri}|${local}`);
+}
+// ST_OnOff is shared by default-style flags, semantic toggles and numbering extensions.
+// Unknown values cannot safely be interpreted as an inactive property.
+function onOff(value: string | undefined, absent = false): boolean {
+  if (value === undefined) return absent;
+  if (['1', 'true', 'on'].includes(value)) return true;
+  if (['0', 'false', 'off'].includes(value)) return false;
+  throw new DocxError('INVALID_BOOLEAN', 'DOCX 包含无效的开关属性。');
 }
 function child(node: XNode | undefined, local: string): XNode | undefined {
   return node?.children.find((x) => x.uri === W && x.local === local);
@@ -70,12 +79,13 @@ function xml(content: Buffer, budget: Budget): XNode {
   const parser = new SaxesParser({ xmlns: true });
   const stack: XNode[] = [];
   let root: XNode | undefined;
-  let parseError = false;
   parser.on('doctype', () => {
     throw new DocxError('UNSAFE_XML', 'DOCX 不允许 DTD 或实体声明。');
   });
   parser.on('error', () => {
-    parseError = true;
+    // Saxes can recover and emit an error for every later bad entity. Stop on the
+    // first fatal error rather than synchronously scanning the remaining input.
+    throw new DocxError('INVALID_XML', 'DOCX XML 损坏或命名空间无效。');
   });
   parser.on('opentag', (tag: SaxesTagNS) => {
     budget.nodes++;
@@ -91,13 +101,13 @@ function xml(content: Buffer, budget: Budget): XNode {
       text: '',
     };
     if (stack.length) stack[stack.length - 1].children.push(node);
-    else if (root) parseError = true;
+    else if (root) throw new DocxError('INVALID_XML', 'DOCX XML 有多个根节点。');
     else root = node;
     stack.push(node);
   });
   const text = (value: string) => {
     if (stack.length) stack[stack.length - 1].text += value;
-    else if (value.trim()) parseError = true;
+    else if (value.trim()) throw new DocxError('INVALID_XML', 'DOCX XML 根节点之外存在文字。');
   };
   parser.on('text', text);
   parser.on('cdata', text);
@@ -110,8 +120,7 @@ function xml(content: Buffer, budget: Budget): XNode {
     if (error instanceof DocxError) throw error;
     throw new DocxError('INVALID_XML', 'DOCX XML 损坏。');
   }
-  if (parseError || !root || stack.length)
-    throw new DocxError('INVALID_XML', 'DOCX XML 损坏或命名空间无效。');
+  if (!root || stack.length) throw new DocxError('INVALID_XML', 'DOCX XML 损坏或命名空间无效。');
   return root;
 }
 function relationshipSource(path: string): string {
@@ -391,6 +400,7 @@ export async function parseDocx(
     throw new DocxError('INVALID_DOCUMENT', 'DOCX 正文结构缺失或重复。');
   const stylePart = parts.get('word/styles.xml');
   const styles = new Map<string, XNode>();
+  const defaultStyles = new Map<string, string>();
   if (stylePart) {
     if (stylePart.uri !== W || stylePart.local !== 'styles')
       throw new DocxError('INVALID_STYLES', 'DOCX 样式清单无效。');
@@ -399,6 +409,12 @@ export async function parseDocx(
       if (id) {
         if (styles.has(id)) throw new DocxError('INVALID_STYLES', 'DOCX 样式 ID 重复。');
         styles.set(id, style);
+        if (onOff(a(style, 'default'))) {
+          const type = a(style, 'type');
+          if (!type || defaultStyles.has(type))
+            throw new DocxError('INVALID_STYLES', 'DOCX 默认样式类型缺失或重复。');
+          defaultStyles.set(type, id);
+        }
       }
     }
   }
@@ -552,6 +568,15 @@ export async function parseDocx(
     tab: ['TAB', ''],
   };
   const audited = new Set<XNode>();
+  const semanticToggles = new Set([
+    'vanish',
+    'webHidden',
+    'specVanish',
+    'strike',
+    'dstrike',
+    'hidden',
+    'isLgl',
+  ]);
   const propertyChildren: Record<string, Set<string>> = {
     pPr: new Set(
       'pStyle keepNext keepLines pageBreakBefore framePr widowControl numPr suppressLineNumbers pBdr shd tabs suppressAutoHyphens kinsoku wordWrap overflowPunct topLinePunct autoSpaceDE autoSpaceDN bidi adjustRightInd snapToGrid spacing ind contextualSpacing mirrorIndents suppressOverlap jc textDirection textAlignment textboxTightWrap outlineLvl divId cnfStyle rPr sectPr pPrChange'.split(
@@ -588,6 +613,14 @@ export async function parseDocx(
     walk(node, (n) => {
       if (audited.has(n)) return;
       audited.add(n);
+      const restartAfterBreak = a(n, 'restartNumberingAfterBreak', W15);
+      if (restartAfterBreak !== undefined && onOff(restartAfterBreak))
+        issue(
+          'blocking',
+          'NUMBERING_RESTART',
+          '列表含跨节重启编号规则，当前不能安全保留。',
+          location,
+        );
       if (n.uri === W) {
         if (n.text.trim() && !['t', 'instrText', 'delText'].includes(n.local))
           issue(
@@ -623,7 +656,12 @@ export async function parseDocx(
         if (n.local.endsWith('Change') && !blockedNodes[n.local])
           issue('blocking', 'REVISIONS', '包含暂不支持的属性修订。', location);
         const block = blockedNodes[n.local];
-        if (block && n.local !== 'tab') issue('blocking', block[0], block[1], location);
+        if (
+          block &&
+          n.local !== 'tab' &&
+          (!semanticToggles.has(n.local) || onOff(a(n, 'val'), true))
+        )
+          issue('blocking', block[0], block[1], location);
         if (n.local === 'br' && a(n, 'type') && a(n, 'type') !== 'textWrapping')
           issue(
             'warning',
@@ -687,12 +725,12 @@ export async function parseDocx(
             '超链接文字会保留，链接格式和跳转不保留。',
             location,
           );
-      } else if (n.uri !== '' && n.uri !== 'http://www.w3.org/XML/1998/namespace') {
+      } else {
         // Relationship attributes are permitted; foreign elements may carry fallback text/graphics.
         issue(
           'blocking',
           'FOREIGN_CONTENT',
-          '包含当前不能识别的命名空间内容，无法确认完整性。',
+          '包含未知或无命名空间的内容，无法确认完整性。',
           location,
         );
       }
@@ -755,11 +793,10 @@ export async function parseDocx(
     if (characters > DOCX_LIMITS.characters)
       throw new DocxError('CHARACTER_LIMIT', 'DOCX 可见正文超过 20,000 字符。', 413);
     const pPr = child(node, 'pPr');
+    const normal = styles.get('Normal');
     const defaultStyle =
-      [...styles.entries()].find(
-        ([, style]) =>
-          a(style, 'type') === 'paragraph' && ['1', 'true'].includes(a(style, 'default') ?? ''),
-      )?.[0] ?? (styles.has('Normal') ? 'Normal' : undefined);
+      defaultStyles.get('paragraph') ??
+      (normal && a(normal, 'default') === undefined ? 'Normal' : undefined);
     const paragraphStyle = a(child(pPr, 'pStyle'), 'val') ?? defaultStyle;
     let headingLevel = heading(paragraphStyle);
     const outline = a(child(pPr, 'outlineLvl'), 'val');
@@ -858,6 +895,9 @@ export async function parseDocx(
     if (tableCount > DOCX_LIMITS.tables)
       throw new DocxError('TABLE_LIMIT', 'DOCX 表格数量超过安全限额。', 413);
     audit(node, location);
+    const tableStyle =
+      a(child(child(node, 'tblPr'), 'tblStyle'), 'val') ?? defaultStyles.get('table');
+    if (tableStyle) usedStyles.add(tableStyle);
     const rows = children(node, 'tr');
     if (!rows.length) issue('blocking', 'EMPTY_TABLE', '表格没有可识别的行。', location);
     let expected: number | undefined;
@@ -964,18 +1004,38 @@ export async function parseDocx(
     issue('blocking', 'NO_TEXT', '没有可翻译的非空正文段落。', 'word/document.xml');
   audit(main, 'word/document.xml');
   if (stylePart) {
+    const inspectedStyles = new Set<string>();
     const markStyle = (id: string | undefined, seen = new Set<string>()) => {
-      if (!id || seen.has(id)) return;
-      seen.add(id);
+      if (!id) return;
+      if (seen.has(id)) {
+        issue('blocking', 'STYLE_CYCLE', '使用中的样式存在循环继承或引用。', `样式 ${id}`);
+        return;
+      }
+      if (inspectedStyles.has(id)) return;
       const style = styles.get(id);
       if (!style) return;
+      const path = new Set(seen);
+      path.add(id);
       audit(style, `样式 ${id}`);
-      markStyle(a(child(style, 'basedOn'), 'val'), seen);
+      markStyle(a(child(style, 'basedOn'), 'val'), path);
+      for (const reference of ['pStyle', 'rStyle', 'tblStyle'])
+        for (const node of nodes(style, reference)) markStyle(a(node, 'val'), path);
+      inspectedStyles.add(id);
     };
     for (const id of usedStyles) markStyle(id);
     for (const style of nodes(main, 'rStyle')) markStyle(a(style, 'val'));
+    if (nodes(main, 'r').length) markStyle(defaultStyles.get('character'));
     const defaults = child(stylePart, 'docDefaults');
-    if (defaults) audit(defaults, '默认样式');
+    if (defaults) {
+      audit(defaults, '默认样式');
+      if (nodes(defaults, 'numPr').length)
+        issue(
+          'blocking',
+          'NUMBERING_DEFAULT',
+          '文档默认段落含编号规则，当前不能安全保留。',
+          '默认样式',
+        );
+    }
   }
   if (numPart) audit(numPart, 'word/numbering.xml');
   return {

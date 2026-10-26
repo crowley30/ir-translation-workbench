@@ -219,7 +219,7 @@ describe('unsupported content is visible and blocks complete translation', () =>
     async (prop) => {
       const result = await parse(
         makeDocx(
-          `<w:p><w:r><w:rPr><w:${prop} w:val="superscript"/></w:rPr><w:t>Amount 100</w:t></w:r></w:p>`,
+          `<w:p><w:r><w:rPr><w:${prop} w:val="${prop === 'vertAlign' ? 'superscript' : '1'}"/></w:rPr><w:t>Amount 100</w:t></w:r></w:p>`,
         ),
       );
       expect(result.report.status).toBe('blocked');

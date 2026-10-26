@@ -15,7 +15,8 @@ import {
 } from '../../shared/docx.js';
 import type { Task } from '../../shared/types.js';
 import { parseDocx } from './parse.js';
-import { makeDocx, supportedFixture } from './fixtures.js';
+import { makeDocx, supportedFixture, WORD_NS } from './fixtures.js';
+import { auditSemanticFixtures, undefinedEntitiesFixture } from './audit-fixtures.js';
 
 const MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const xml = (body: string) =>
@@ -214,6 +215,79 @@ describe('DOCX upload and normalized persistence boundary', () => {
       .expect(409);
     expect(store.list()).toHaveLength(0);
   });
+
+  it.each(auditSemanticFixtures())(
+    'blocks semantic-loss package through preflight, creation and export: $name',
+    async ({ bytes, code }) => {
+      const record = await imported(bytes);
+      expect(record.report.status).toBe('blocked');
+      expect(record.report.issues).toContainEqual(
+        expect.objectContaining({ code, severity: 'blocking' }),
+      );
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const rejected = await request(app)
+          .post('/api/tasks/docx')
+          .send({ importId: record.id, style: 'faithful', acknowledgeWarnings: true })
+          .expect(409);
+        expect(rejected.body.id).toBeUndefined();
+      }
+      expect(store.list()).toHaveLength(0);
+      expect(store.getTaskForImport(record.id)).toBeUndefined();
+      await request(app).get(`/api/tasks/${record.id}`).expect(404);
+      for (const mode of ['chinese', 'bilingual'])
+        await request(app).get(`/api/tasks/${record.id}/docx?mode=${mode}`).expect(404);
+    },
+  );
+
+  it('rejects a limit-sized repeated undefined entity XML without persisting or exporting it', async () => {
+    const response = await upload(await undefinedEntitiesFixture()).expect(400);
+    expect(response.body.code).toBe('INVALID_XML');
+    expect(response.body.id).toBeUndefined();
+    expect(JSON.stringify(response.body)).not.toContain('&x;');
+    expect(store.list()).toHaveLength(0);
+    const rejected = await request(app)
+      .post('/api/tasks/docx')
+      .send({ importId: 'invalid-xml-import', style: 'faithful', acknowledgeWarnings: true })
+      .expect(404);
+    expect(rejected.body.id).toBeUndefined();
+    for (const mode of ['chinese', 'bilingual'])
+      await request(app).get(`/api/tasks/invalid-xml-import/docx?mode=${mode}`).expect(404);
+  });
+
+  it.each([
+    [
+      'default style attribute',
+      makeDocx(paragraph('Synthetic default style boundary.'), {
+        'word/styles.xml': `<w:styles xmlns:w="${WORD_NS}"><w:style w:type="paragraph" w:styleId="AuditDefault" w:default="unexpected"><w:rPr><w:vanish/></w:rPr></w:style></w:styles>`,
+      }),
+    ],
+    [
+      'semantic run property',
+      makeDocx(
+        '<w:p><w:r><w:rPr><w:strike w:val="unexpected"/></w:rPr><w:t>Synthetic amount.</w:t></w:r></w:p>',
+      ),
+    ],
+    [
+      'section restart attribute',
+      makeDocx(paragraph('Synthetic numbering boundary.'), {
+        'word/numbering.xml': `<w:numbering xmlns:w="${WORD_NS}" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"><w:abstractNum w:abstractNumId="4" w15:restartNumberingAfterBreak="unexpected"><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/></w:lvl></w:abstractNum><w:num w:numId="7"><w:abstractNumId w:val="4"/></w:num></w:numbering>`,
+      }),
+    ],
+  ] as const)(
+    'rejects invalid OOXML OnOff on %s before creating an import',
+    async (_name, bytes) => {
+      const response = await upload(bytes).expect(400);
+      expect(response.body.code).toBe('INVALID_BOOLEAN');
+      expect(response.body.id).toBeUndefined();
+      expect(store.list()).toHaveLength(0);
+      await request(app)
+        .post('/api/tasks/docx')
+        .send({ importId: 'invalid-boolean-import', style: 'faithful', acknowledgeWarnings: true })
+        .expect(404);
+      for (const mode of ['chinese', 'bilingual'])
+        await request(app).get(`/api/tasks/invalid-boolean-import/docx?mode=${mode}`).expect(404);
+    },
+  );
 
   it('requires explicit acknowledgement of formatting warnings before creating a task', async () => {
     const record = await imported(
