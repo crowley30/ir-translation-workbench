@@ -1,3 +1,5 @@
+import type { DocxDocument } from './docx';
+
 export type Style = 'faithful' | 'business';
 export type ParagraphStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
 export type TaskStatus = 'draft' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled';
@@ -11,6 +13,7 @@ export interface Paragraph {
   edited: boolean;
   status: ParagraphStatus;
   error: string | null;
+  location?: string;
 }
 export interface Task {
   id: string;
@@ -21,6 +24,7 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   paragraphs: Paragraph[];
+  document?: DocxDocument;
 }
 export interface ServiceConfig {
   mode: 'mock' | 'real';

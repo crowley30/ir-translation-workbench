@@ -3,6 +3,7 @@ import type { MockScenario, ServiceConfig, Style, Task } from '../shared/types';
 import { MAX_CHARACTERS, MAX_PARAGRAPHS } from '../shared/types';
 import { api } from './api';
 import { startPolling } from './polling';
+import DocxImport from './DocxImport';
 
 const STATUS: Record<Task['status'], string> = {
   draft: '待翻译',
@@ -40,6 +41,8 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [posting, setPosting] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [docxBusy, setDocxBusy] = useState(false);
+  const [importEpoch, setImportEpoch] = useState(0);
   const latestConfig = useRef<ServiceConfig | null>(null);
   const [loading, setLoading] = useState(!!selectedId);
   const currentId = useRef(selectedId);
@@ -138,6 +141,7 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [drafts]);
   function navigate(id: string | null) {
+    setImportEpoch((value) => value + 1);
     window.history.pushState(
       {},
       '',
@@ -180,7 +184,7 @@ export default function App() {
     input.length > (config?.maxCharacters ?? MAX_CHARACTERS) ||
     paragraphCount > (config?.maxParagraphs ?? MAX_PARAGRAPHS);
   function createTask() {
-    if (actionLock.current || !config?.ready || !input.trim() || overLimit) return;
+    if (actionLock.current || docxBusy || !config?.ready || !input.trim() || overLimit) return;
     const submitted = { text: input, style, scenario, mode: config.mode };
     setCreating(true);
     void action(async () => {
@@ -201,6 +205,44 @@ export default function App() {
       });
       acceptTask(started);
     }).finally(() => setCreating(false));
+  }
+  function openImported(
+    created: Task,
+    submittedMode: 'mock' | 'real',
+    submittedScenario: MockScenario,
+  ) {
+    if (created.mode !== submittedMode || latestConfig.current?.mode !== submittedMode) {
+      setError('服务模式已变化，文档任务已保存，请从列表打开后确认。');
+      return;
+    }
+    void action(async () => {
+      navigate(created.id);
+      setTask(created);
+      const started = await api<Task>(`/tasks/${created.id}/translate`, {
+        method: 'POST',
+        body: JSON.stringify({ scenario: submittedScenario }),
+      });
+      acceptTask(started);
+    });
+  }
+  function downloadDocx(mode: 'chinese' | 'bilingual') {
+    if (!task?.document) return;
+    const id = task.id;
+    void action(async () => {
+      const response = await fetch(`/api/tasks/${id}/docx?mode=${mode}`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || 'DOCX 导出失败，请重试。');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob),
+        link = document.createElement('a');
+      link.href = url;
+      link.download = `ir-${id}-${mode}.docx`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setNotice('已导出当前已保存的文档。');
+    });
   }
   function translate(paragraphId?: string) {
     if (!task) return;
@@ -505,7 +547,7 @@ export default function App() {
                           <span className="paragraph-number">
                             {String(index + 1).padStart(2, '0')}
                           </span>
-                          <span>原文</span>
+                          <span>{p.location || '原文'}</span>
                         </div>
                         <p>{p.source}</p>
                       </div>
@@ -563,6 +605,38 @@ export default function App() {
                   );
                 })}
               </div>
+              {task.document && (
+                <div className="docx-export">
+                  <div>
+                    <strong>{task.document.filename}</strong>
+                    <p>全部文字段落完成并保存后，可导出可编辑的基础结构；不承诺逐页原样。</p>
+                  </div>
+                  <div className="toolbar-actions">
+                    <button
+                      disabled={
+                        !!currentDirty ||
+                        posting ||
+                        task.status === 'running' ||
+                        task.paragraphs.some((p) => p.status !== 'done' || !p.translation.trim())
+                      }
+                      onClick={() => downloadDocx('chinese')}
+                    >
+                      导出中文 DOCX
+                    </button>
+                    <button
+                      disabled={
+                        !!currentDirty ||
+                        posting ||
+                        task.status === 'running' ||
+                        task.paragraphs.some((p) => p.status !== 'done' || !p.translation.trim())
+                      }
+                      onClick={() => downloadDocx('bilingual')}
+                    >
+                      导出双语 DOCX
+                    </button>
+                  </div>
+                </div>
+              )}
               <p className="footnote">
                 复制和导出包含已保存的内容。重译仅作用于选定段落；人工修改过的段落需要确认后才会替换。
               </p>
@@ -594,9 +668,9 @@ export default function App() {
                   id="source-input"
                   className="source-input"
                   value={input}
-                  disabled={creating}
+                  disabled={creating || docxBusy}
                   onChange={(e) => {
-                    if (!creating) setInput(e.target.value);
+                    if (!creating && !docxBusy) setInput(e.target.value);
                   }}
                   placeholder={
                     'Dear team,\n\nPaste your English text here…\n\n在这里粘贴英文，开始逐段翻译与审校。'
@@ -628,9 +702,9 @@ export default function App() {
                       id="style"
                       aria-label="文体"
                       value={style}
-                      disabled={creating}
+                      disabled={creating || docxBusy}
                       onChange={(e) => {
-                        if (!creating) setStyle(e.target.value as Style);
+                        if (!creating && !docxBusy) setStyle(e.target.value as Style);
                       }}
                     >
                       <option value="business">商务文体</option>
@@ -639,13 +713,23 @@ export default function App() {
                   </div>
                   <button
                     className="primary create"
-                    disabled={!input.trim() || overLimit || posting || !config?.ready}
+                    disabled={!input.trim() || overLimit || posting || docxBusy || !config?.ready}
                     onClick={createTask}
                   >
                     {creating ? '正在创建…' : '创建并翻译'} <span aria-hidden="true">↗</span>
                   </button>
                 </div>
               </div>
+              <DocxImport
+                key={importEpoch}
+                style={style}
+                scenario={scenario}
+                mode={config?.mode ?? null}
+                ready={!!config?.ready}
+                busy={posting || creating}
+                onBusyChange={setDocxBusy}
+                onCreated={openImported}
+              />
               <div className="style-notes">
                 <div>
                   <span className="note-symbol">Aa</span>
@@ -663,7 +747,7 @@ export default function App() {
                 </div>
               </div>
               <div className="next-note">
-                <span>下一阶段</span> DOCX 导入与导出、分层术语及数字检查将分阶段开放。
+                <span>下一阶段</span> 分层术语和数字检查将在后续阶段开放。
               </div>
             </>
           )}
@@ -675,9 +759,9 @@ export default function App() {
                 id="scenario"
                 aria-label="模拟场景"
                 value={scenario}
-                disabled={creating}
+                disabled={creating || docxBusy}
                 onChange={(e) => {
-                  if (!creating) setScenario(e.target.value as MockScenario);
+                  if (!creating && !docxBusy) setScenario(e.target.value as MockScenario);
                 }}
               >
                 {SCENARIOS.map(([value, label]) => (

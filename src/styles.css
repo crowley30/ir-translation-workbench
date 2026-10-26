@@ -963,3 +963,175 @@ select {
   color: #728069;
   background: #f8faf4;
 }
+
+.docx-card {
+  background: #fff;
+  border: 1px solid #dfe4da;
+  border-radius: 10px;
+  margin-top: 24px;
+  overflow: hidden;
+}
+.docx-upload {
+  padding: 0 27px 22px;
+}
+.docx-upload label {
+  display: block;
+  font-size: 11px;
+  color: #819071;
+  margin-bottom: 10px;
+}
+.docx-upload input {
+  display: block;
+  width: 100%;
+  font-size: 12px;
+  color: #587049;
+  padding: 10px;
+  border: 1px dashed #cdd9c4;
+  border-radius: 6px;
+  background: #fafcf7;
+}
+.docx-upload-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 13px;
+}
+.docx-report {
+  border-top: 1px solid #e2e8db;
+  padding: 22px 27px;
+}
+.docx-report-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.docx-report h3 {
+  font-size: 14px;
+  font-weight: 550;
+  margin: 0;
+}
+.docx-filename {
+  font-size: 11px;
+  color: #7e8a74;
+  overflow-wrap: anywhere;
+}
+.docx-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 10px;
+  color: #668054;
+  margin: 17px 0;
+}
+.docx-stats > span {
+  padding: 5px 9px;
+  border-radius: 4px;
+  background: #f1f5eb;
+}
+.docx-issues {
+  list-style: none;
+  padding: 0;
+  margin: 15px 0;
+}
+.docx-issues li {
+  padding: 11px 13px;
+  border-left: 3px solid #d7b974;
+  background: #faf6eb;
+  margin-top: 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.docx-issues li.blocking {
+  background: #fff1e9;
+  border-left-color: #c57c5a;
+  color: #985e45;
+}
+.docx-issues strong {
+  font-weight: 500;
+}
+.docx-issues small {
+  display: block;
+  color: #9c9d89;
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+.docx-preview {
+  font-size: 11px;
+  margin-top: 20px;
+  color: #688058;
+}
+.docx-preview summary {
+  cursor: pointer;
+}
+.docx-preview-paragraph {
+  padding: 10px 8px;
+  border-bottom: 1px solid #edf0e7;
+}
+.docx-preview-paragraph small {
+  font-size: 9px;
+  color: #a5ad9d;
+}
+.docx-preview-paragraph p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 5px 0;
+}
+.docx-preview-paragraph.is-heading p {
+  font-weight: 600;
+  font-size: 14px;
+}
+.docx-preview-table {
+  overflow: auto;
+  margin: 14px 0;
+}
+.docx-preview-table table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.docx-preview-table td {
+  border: 1px solid #d8e1cf;
+  padding: 4px;
+  vertical-align: top;
+  min-width: 100px;
+}
+.docx-ack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #6e805e;
+  margin: 17px 0;
+  line-height: 1.8;
+}
+.docx-export {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid #d6dfcb;
+  border-radius: 8px;
+  background: #f0f5e9;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  align-items: center;
+}
+.docx-export strong {
+  font-size: 11px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.docx-export p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #8a987e;
+  margin: 7px 0 0;
+}
+@media (max-width: 1000px) {
+  .docx-export {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

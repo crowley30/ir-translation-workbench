@@ -1,0 +1,269 @@
+{
+  "scope": "Synthetic exports only; LibreOffice rendering does not establish Microsoft Word compatibility, page fidelity, or translation quality.",
+  "commands": [
+    {
+      "command": ["soffice", "--version"],
+      "exitCode": 0,
+      "seconds": 0.158,
+      "stdout": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5\n\n",
+      "stderr": ""
+    },
+    {
+      "command": ["pdftoppm", "-v"],
+      "exitCode": 0,
+      "seconds": 0.019,
+      "stdout": "",
+      "stderr": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC\n"
+    },
+    {
+      "command": [
+        "soffice",
+        "-env:UserInstallation=file:///tmp/ir-docx-render-gd2zkhcv/chinese/profile",
+        "--headless",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        "/tmp/ir-docx-render-gd2zkhcv/chinese",
+        "/tmp/ir-p2-exports/chinese.docx"
+      ],
+      "exitCode": 0,
+      "seconds": 0.576,
+      "stdout": "convert /tmp/ir-p2-exports/chinese.docx as a Writer document -> /tmp/ir-docx-render-gd2zkhcv/chinese/chinese.pdf using filter : writer_pdf_Export\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-png",
+        "-r",
+        "110",
+        "docs/evidence/p2-render/chinese.pdf",
+        "docs/evidence/p2-render/chinese"
+      ],
+      "exitCode": 0,
+      "seconds": 0.126,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "soffice",
+        "-env:UserInstallation=file:///tmp/ir-docx-render-gd2zkhcv/bilingual/profile",
+        "--headless",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        "/tmp/ir-docx-render-gd2zkhcv/bilingual",
+        "/tmp/ir-p2-exports/bilingual.docx"
+      ],
+      "exitCode": 0,
+      "seconds": 0.556,
+      "stdout": "convert /tmp/ir-p2-exports/bilingual.docx as a Writer document -> /tmp/ir-docx-render-gd2zkhcv/bilingual/bilingual.pdf using filter : writer_pdf_Export\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-png",
+        "-r",
+        "110",
+        "docs/evidence/p2-render/bilingual.pdf",
+        "docs/evidence/p2-render/bilingual"
+      ],
+      "exitCode": 0,
+      "seconds": 0.166,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "files": [
+    {
+      "sourceFilename": "chinese.docx",
+      "sourceBytes": 10760,
+      "pdf": "chinese.pdf",
+      "pages": 1,
+      "pageSizesPt": [[595.303955078125, 841.8897705078125]],
+      "fonts": [
+        "BAAAAA+LiberationSans",
+        "CAAAAA+NotoSansCJKsc-Regular",
+        "DAAAAA+NotoSansCJKsc-Regular",
+        "EAAAAA+LiberationSans"
+      ],
+      "structure": [
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "[模拟文档·非实际翻译] 中文译文。包含模拟占位内容，请勿作为正式材料使用。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Heading 1",
+          "text": "合成 IR 更新"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "尊敬的合成投资人：\n以下仅为流程样本。\t2026 年。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "• 人工审校：合成机器人平台。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "1. 首个里程碑。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": ""
+        },
+        {
+          "kind": "table",
+          "rows": [
+            [["指标", "季度"], ["数值"]],
+            [["收入"], ["1,200 万美元（USD 12 million）", "2026 年合成预测。"]]
+          ]
+        }
+      ],
+      "nonemptyParagraphs": 11,
+      "missingVisibleParagraphs": [],
+      "requiredMarker": "模拟",
+      "requiredMarkerVisible": true,
+      "savedTaskComparison": {
+        "taskId": "synthetic-render-task",
+        "mode": "chinese",
+        "structuralParagraphs": 11,
+        "translatableParagraphs": 10,
+        "expectedParagraphsAfterNotice": 11,
+        "actualParagraphsAfterNotice": 11,
+        "exactParagraphOrderAndText": true,
+        "humanEditedIdsAndRevisions": {
+          "p0001": 1,
+          "p0002": 1,
+          "p0003": 3,
+          "p0004": 1,
+          "p0005": 1,
+          "p0006": 1,
+          "p0007": 1,
+          "p0008": 1,
+          "p0009": 1,
+          "p0010": 1
+        }
+      }
+    },
+    {
+      "sourceFilename": "bilingual.docx",
+      "sourceBytes": 10959,
+      "pdf": "bilingual.pdf",
+      "pages": 1,
+      "pageSizesPt": [[595.303955078125, 841.8897705078125]],
+      "fonts": [
+        "BAAAAA+LiberationSans",
+        "CAAAAA+NotoSansCJKsc-Regular",
+        "DAAAAA+NotoSansCJKsc-Regular",
+        "EAAAAA+LiberationSans"
+      ],
+      "structure": [
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "[模拟文档·非实际翻译] 中英对照，每组先原文后译文。包含模拟占位内容，请勿作为正式材料使用。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "Synthetic IR update"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Heading 1",
+          "text": "合成 IR 更新"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "Dear synthetic investor."
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "尊敬的合成投资人：\n以下仅为流程样本。\t2026 年。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "• Robotics platform."
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "• 人工审校：合成机器人平台。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "1. First milestone."
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "1. 首个里程碑。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": ""
+        },
+        {
+          "kind": "table",
+          "rows": [
+            [
+              ["Metric", "指标", "Quarter", "季度"],
+              ["Value", "数值"]
+            ],
+            [
+              ["Revenue", "收入"],
+              [
+                "USD 12 million",
+                "1,200 万美元（USD 12 million）",
+                "Synthetic estimate.",
+                "2026 年合成预测。"
+              ]
+            ]
+          ]
+        }
+      ],
+      "nonemptyParagraphs": 21,
+      "missingVisibleParagraphs": [],
+      "requiredMarker": "模拟",
+      "requiredMarkerVisible": true,
+      "savedTaskComparison": {
+        "taskId": "synthetic-render-task",
+        "mode": "bilingual",
+        "structuralParagraphs": 11,
+        "translatableParagraphs": 10,
+        "expectedParagraphsAfterNotice": 21,
+        "actualParagraphsAfterNotice": 21,
+        "exactParagraphOrderAndText": true,
+        "humanEditedIdsAndRevisions": {
+          "p0001": 1,
+          "p0002": 1,
+          "p0003": 3,
+          "p0004": 1,
+          "p0005": 1,
+          "p0006": 1,
+          "p0007": 1,
+          "p0008": 1,
+          "p0009": 1,
+          "p0010": 1
+        }
+      }
+    }
+  ],
+  "libreOfficeVersion": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+  "popplerVersion": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC",
+  "exitCode": 0
+}

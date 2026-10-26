@@ -1,0 +1,241 @@
+{
+  "id": "synthetic-render-task",
+  "title": "Synthetic DOCX rendering evidence",
+  "style": "business",
+  "mode": "mock",
+  "status": "completed",
+  "createdAt": "2026-10-26T00:00:00Z",
+  "updatedAt": "2026-10-26T00:00:00Z",
+  "document": {
+    "version": 1,
+    "filename": "synthetic-ir.docx",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "id": "b0001",
+        "paragraphId": "p0001",
+        "source": "Synthetic IR update",
+        "location": "正文块 1",
+        "headingLevel": 1
+      },
+      {
+        "kind": "paragraph",
+        "id": "b0002",
+        "paragraphId": "p0002",
+        "source": "Dear synthetic investor.",
+        "location": "正文块 2"
+      },
+      {
+        "kind": "paragraph",
+        "id": "b0003",
+        "paragraphId": "p0003",
+        "source": "Robotics platform.",
+        "location": "正文块 3",
+        "list": {
+          "kind": "bullet",
+          "level": 0,
+          "label": "•"
+        }
+      },
+      {
+        "kind": "paragraph",
+        "id": "b0004",
+        "paragraphId": "p0004",
+        "source": "First milestone.",
+        "location": "正文块 4",
+        "list": {
+          "kind": "decimal",
+          "level": 0,
+          "label": "1."
+        }
+      },
+      {
+        "kind": "paragraph",
+        "id": "b0005",
+        "paragraphId": null,
+        "source": "",
+        "location": "正文块 5"
+      },
+      {
+        "kind": "table",
+        "id": "b0006",
+        "rows": [
+          {
+            "id": "b0006-r001",
+            "cells": [
+              {
+                "id": "b0006-r001-c001",
+                "paragraphs": [
+                  {
+                    "kind": "paragraph",
+                    "id": "b0006-r001-c001-p001",
+                    "paragraphId": "p0005",
+                    "source": "Metric",
+                    "location": "表格 1 / 第 1 行第 1 列 / 第 1 段"
+                  },
+                  {
+                    "kind": "paragraph",
+                    "id": "b0006-r001-c001-p002",
+                    "paragraphId": "p0006",
+                    "source": "Quarter",
+                    "location": "表格 1 / 第 1 行第 1 列 / 第 2 段"
+                  }
+                ]
+              },
+              {
+                "id": "b0006-r001-c002",
+                "paragraphs": [
+                  {
+                    "kind": "paragraph",
+                    "id": "b0006-r001-c002-p001",
+                    "paragraphId": "p0007",
+                    "source": "Value",
+                    "location": "表格 1 / 第 1 行第 2 列 / 第 1 段"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b0006-r002",
+            "cells": [
+              {
+                "id": "b0006-r002-c001",
+                "paragraphs": [
+                  {
+                    "kind": "paragraph",
+                    "id": "b0006-r002-c001-p001",
+                    "paragraphId": "p0008",
+                    "source": "Revenue",
+                    "location": "表格 1 / 第 2 行第 1 列 / 第 1 段"
+                  }
+                ]
+              },
+              {
+                "id": "b0006-r002-c002",
+                "paragraphs": [
+                  {
+                    "kind": "paragraph",
+                    "id": "b0006-r002-c002-p001",
+                    "paragraphId": "p0009",
+                    "source": "USD 12 million",
+                    "location": "表格 1 / 第 2 行第 2 列 / 第 1 段"
+                  },
+                  {
+                    "kind": "paragraph",
+                    "id": "b0006-r002-c002-p002",
+                    "paragraphId": "p0010",
+                    "source": "Synthetic estimate.",
+                    "location": "表格 1 / 第 2 行第 2 列 / 第 2 段"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "paragraphs": [
+    {
+      "id": "p0001",
+      "source": "Synthetic IR update",
+      "translation": "合成 IR 更新",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "正文块 1"
+    },
+    {
+      "id": "p0002",
+      "source": "Dear synthetic investor.",
+      "translation": "尊敬的合成投资人：\n以下仅为流程样本。\t2026 年。",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "正文块 2"
+    },
+    {
+      "id": "p0003",
+      "source": "Robotics platform.",
+      "translation": "人工审校：合成机器人平台。",
+      "revision": 3,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "正文块 3"
+    },
+    {
+      "id": "p0004",
+      "source": "First milestone.",
+      "translation": "首个里程碑。",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "正文块 4"
+    },
+    {
+      "id": "p0005",
+      "source": "Metric",
+      "translation": "指标",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "表格 1 / 第 1 行第 1 列 / 第 1 段"
+    },
+    {
+      "id": "p0006",
+      "source": "Quarter",
+      "translation": "季度",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "表格 1 / 第 1 行第 1 列 / 第 2 段"
+    },
+    {
+      "id": "p0007",
+      "source": "Value",
+      "translation": "数值",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "表格 1 / 第 1 行第 2 列 / 第 1 段"
+    },
+    {
+      "id": "p0008",
+      "source": "Revenue",
+      "translation": "收入",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "表格 1 / 第 2 行第 1 列 / 第 1 段"
+    },
+    {
+      "id": "p0009",
+      "source": "USD 12 million",
+      "translation": "1,200 万美元（USD 12 million）",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "表格 1 / 第 2 行第 2 列 / 第 1 段"
+    },
+    {
+      "id": "p0010",
+      "source": "Synthetic estimate.",
+      "translation": "2026 年合成预测。",
+      "revision": 1,
+      "edited": true,
+      "status": "done",
+      "error": null,
+      "location": "表格 1 / 第 2 行第 2 列 / 第 2 段"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import {
 } from '../shared/types.js';
 import { ProviderError, safeProviderMessage, type TranslationAdapter } from './adapter.js';
 import { TaskStore } from './store.js';
+import { DOCX_LIMITS, type DocxDocument, type DocxParagraph } from '../shared/docx.js';
 
 export class ApiError extends Error {
   constructor(
@@ -58,6 +59,87 @@ function wait(ms: number, signal: AbortSignal): Promise<void> {
     }, ms);
     signal.addEventListener('abort', onAbort, { once: true });
   });
+}
+function validateDocumentMapping(document: DocxDocument): DocxParagraph[] {
+  const invalid = () =>
+    new ApiError(409, 'DOCX 结构或段落映射无效，请重新上传。', 'INVALID_DOCX_MAPPING');
+  if (document.version !== 1 || !Array.isArray(document.blocks)) throw invalid();
+  const paragraphs: DocxParagraph[] = [];
+  const structuralIds = new Set<string>();
+  let tables = 0;
+  let cells = 0;
+  const checkId = (id: string) => {
+    if (typeof id !== 'string' || !id || id.length > 200 || structuralIds.has(id)) throw invalid();
+    structuralIds.add(id);
+  };
+  for (const block of document.blocks) {
+    if (block.kind === 'paragraph') {
+      checkId(block.id);
+      paragraphs.push(block);
+    } else if (block.kind === 'table') {
+      checkId(block.id);
+      tables += 1;
+      if (!Array.isArray(block.rows) || !block.rows.length) throw invalid();
+      for (const row of block.rows) {
+        checkId(row.id);
+        if (
+          !Array.isArray(row.cells) ||
+          !row.cells.length ||
+          row.cells.length > DOCX_LIMITS.columns
+        )
+          throw invalid();
+        for (const cell of row.cells) {
+          checkId(cell.id);
+          cells += 1;
+          if (!Array.isArray(cell.paragraphs)) throw invalid();
+          for (const paragraph of cell.paragraphs) {
+            checkId(paragraph.id);
+            paragraphs.push(paragraph);
+          }
+        }
+      }
+    } else throw invalid();
+  }
+  const mappingIds = new Set<string>();
+  let characters = 0;
+  for (const paragraph of paragraphs) {
+    if (
+      paragraph.kind !== 'paragraph' ||
+      typeof paragraph.source !== 'string' ||
+      typeof paragraph.location !== 'string' ||
+      !paragraph.location ||
+      paragraph.location.length > 500
+    )
+      throw invalid();
+    characters += paragraph.source.length;
+    if (!paragraph.source.trim()) {
+      if (paragraph.paragraphId !== null) throw invalid();
+    } else {
+      if (
+        typeof paragraph.paragraphId !== 'string' ||
+        !paragraph.paragraphId ||
+        paragraph.paragraphId.length > 200 ||
+        mappingIds.has(paragraph.paragraphId)
+      )
+        throw invalid();
+      mappingIds.add(paragraph.paragraphId);
+    }
+  }
+  if (
+    paragraphs.length > Math.min(MAX_PARAGRAPHS, DOCX_LIMITS.paragraphs) ||
+    mappingIds.size > MAX_PARAGRAPHS ||
+    characters > Math.min(MAX_CHARACTERS, DOCX_LIMITS.characters) ||
+    tables > DOCX_LIMITS.tables ||
+    cells > DOCX_LIMITS.cells
+  ) {
+    throw new ApiError(
+      409,
+      'DOCX 超出本轮可处理范围，请缩小文档后重新上传。',
+      'DOCX_LIMIT_EXCEEDED',
+    );
+  }
+  if (!mappingIds.size) throw new ApiError(409, 'DOCX 没有可翻译的正文。', 'DOCX_EMPTY');
+  return paragraphs.filter((p) => p.source.trim());
 }
 export class TaskService {
   private runs = new Map<string, Run>();
@@ -112,6 +194,78 @@ export class TaskService {
         error: null,
       })),
     });
+  }
+  createFromDocx(body: unknown): Task {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new ApiError(400, '请提供 DOCX 预检查记录与文体。', 'INVALID_INPUT');
+    }
+    const { importId, style, acknowledgeWarnings } = body as Record<string, unknown>;
+    if (typeof importId !== 'string' || !importId || importId.length > 100) {
+      throw new ApiError(400, '请先上传 DOCX 并完成预检查。', 'INVALID_IMPORT');
+    }
+    if (!styles.includes(style as Style))
+      throw new ApiError(400, '请选择有效文体。', 'INVALID_STYLE');
+    if (typeof acknowledgeWarnings !== 'boolean') {
+      throw new ApiError(400, '请明确确认是否已阅读预检查提示。', 'INVALID_ACKNOWLEDGEMENT');
+    }
+    const record = this.store.getImport(importId);
+    if (!record) throw new ApiError(404, '预检查记录不存在，请重新上传 DOCX。', 'IMPORT_NOT_FOUND');
+    const existing = this.store.getTaskForImport(importId);
+    if (existing) {
+      if (existing.style !== style) {
+        throw new ApiError(
+          409,
+          '该预检查记录已按其他文体创建任务，请重新上传。',
+          'IMPORT_ALREADY_USED',
+        );
+      }
+      return existing;
+    }
+    if (
+      record.report.status === 'blocked' ||
+      record.report.issues.some((issue) => issue.severity === 'blocking')
+    ) {
+      throw new ApiError(409, 'DOCX 含不支持的内容或超出限制，无法创建翻译任务。', 'DOCX_BLOCKED');
+    }
+    if (
+      (record.report.status === 'warning' ||
+        record.report.issues.some((issue) => issue.severity === 'warning')) &&
+      !acknowledgeWarnings
+    ) {
+      throw new ApiError(409, '请先阅读并确认 DOCX 预检查提示。', 'DOCX_WARNINGS_UNACKNOWLEDGED');
+    }
+    const document = record.document;
+    const mapped = validateDocumentMapping(document);
+    const now = new Date().toISOString();
+    const task: Task = {
+      id: randomUUID(),
+      title: document.filename,
+      style: style as Style,
+      status: 'draft',
+      mode: this.adapter.mode,
+      createdAt: now,
+      updatedAt: now,
+      document,
+      paragraphs: mapped.map((p) => ({
+        id: p.paragraphId!,
+        source: p.source,
+        location: p.location,
+        translation: '',
+        revision: 0,
+        edited: false,
+        status: 'pending',
+        error: null,
+      })),
+    };
+    const persisted = this.store.createForImport(importId, task);
+    if (persisted.style !== style) {
+      throw new ApiError(
+        409,
+        '该预检查记录已按其他文体创建任务，请重新上传。',
+        'IMPORT_ALREADY_USED',
+      );
+    }
+    return persisted;
   }
   edit(id: string, paragraphId: string, body: unknown): Task {
     const task = this.get(id);
