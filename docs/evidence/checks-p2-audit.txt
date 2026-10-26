@@ -1,0 +1,682 @@
+P2 bounded independent-audit repair evidence
+Date: 2026-10-26
+Branch: feat/p0-p1-text-workbench
+Baseline before repair: 216efea8966053781983047df8bc7d92aa0b9743
+Scope: parser safety/semantic diagnostics and necessary regressions only; no P3, paid models, credentials, deployment, main merge, release or real user files.
+
+
+COMMAND (before fix): npx vitest run server/docx/api.test.ts
+EXIT CODE: 1
+Effective red regression, before 3 further invalid-boolean tests were added. 23 status assertion failures: 22 ready and 1 numbering warning.
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+ ❯ server/docx/api.test.ts (68 tests | 23 failed) 6563ms
+   ❯ DOCX upload and normalized persistence boundary (55)
+     × blocks semantic-loss package through preflight, creation and export: direct table style strike 12ms
+     × blocks semantic-loss package through preflight, creation and export: inherited table style strike 11ms
+     × blocks semantic-loss package through preflight, creation and export: conditional table style strike 11ms
+     × blocks semantic-loss package through preflight, creation and export: default paragraph strike boolean on 8ms
+     × blocks semantic-loss package through preflight, creation and export: default character strike boolean on 9ms
+     × blocks semantic-loss package through preflight, creation and export: default character strike boolean true 7ms
+     × blocks semantic-loss package through preflight, creation and export: default character strike boolean 1 9ms
+     × blocks semantic-loss package through preflight, creation and export: direct table style dstrike 11ms
+     × blocks semantic-loss package through preflight, creation and export: inherited table style dstrike 7ms
+     × blocks semantic-loss package through preflight, creation and export: conditional table style dstrike 8ms
+     × blocks semantic-loss package through preflight, creation and export: default paragraph dstrike boolean on 7ms
+     × blocks semantic-loss package through preflight, creation and export: default character dstrike boolean on 9ms
+     × blocks semantic-loss package through preflight, creation and export: default character dstrike boolean true 7ms
+     × blocks semantic-loss package through preflight, creation and export: default character dstrike boolean 1 8ms
+     × blocks semantic-loss package through preflight, creation and export: direct table style vanish 8ms
+     × blocks semantic-loss package through preflight, creation and export: inherited table style vanish 6ms
+     × blocks semantic-loss package through preflight, creation and export: conditional table style vanish 8ms
+     × blocks semantic-loss package through preflight, creation and export: default paragraph vanish boolean on 6ms
+     × blocks semantic-loss package through preflight, creation and export: default character vanish boolean on 6ms
+     × blocks semantic-loss package through preflight, creation and export: default character vanish boolean true 6ms
+     × blocks semantic-loss package through preflight, creation and export: default character vanish boolean 1 9ms
+     × blocks semantic-loss package through preflight, creation and export: section numbering restart extension 9ms
+     × blocks semantic-loss package through preflight, creation and export: unknown unnamespaced run element 7ms
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/23]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  23 failed | 45 passed (68)
+   Start at  03:58:31
+   Duration  7.15s (tests 94%, import 4%, transform 2%)
+
+
+COMMAND (first full run under shared load): npm test
+EXIT CODE: 1
+Old ZIP fixture generation hit existing 15000ms test limit; no threshold/fixture relaxation.
+
+> ir-translation-workbench@0.1.0 test
+> vitest run && npm run test:public
+
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+ ❯ server/docx/parse.test.ts (55 tests | 1 failed) 52249ms
+   ❯ ZIP/XML/package safety and limits (16)
+     × bounds non-XML entry size and total expanded bytes independently of upload/ratio limits 45325ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/docx/parse.test.ts > ZIP/XML/package safety and limits > bounds non-XML entry size and total expanded bytes independently of upload/ratio limits
+Error: Test timed out in 15000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ server/docx/parse.test.ts:326:3
+    324|       });
+    325|   });
+    326|   it('bounds non-XML entry size and total expanded bytes independently…
+       |   ^
+    327|     await expect(
+    328|       parse(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 7 passed (8)
+      Tests  1 failed | 343 passed (344)
+   Start at  04:02:32
+   Duration  53.39s (tests 95%, import 3%, transform 2%)
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm test
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test
+> vitest run && npm run test:public
+
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+
+ Test Files  8 passed (8)
+      Tests  344 passed (344)
+   Start at  04:08:26
+   Duration  7.12s (tests 93%, import 5%, transform 2%)
+
+
+> ir-translation-workbench@0.1.0 test:public
+> node --test scripts/check-public.test.mjs
+
+✔ empty staged diff still scans HEAD, index and working files (129.097639ms)
+✔ rejects synthetic credential in tracked worktree when staging is empty (117.641951ms)
+✔ checks complete staged snapshots even after worktree cleanup (115.471677ms)
+✔ checks nonignored untracked intended files and runtime artifacts (117.619715ms)
+✔ base range scans intermediate committed blobs removed before HEAD (267.226571ms)
+✔ client build still requires separation from provider config and credentials (113.724961ms)
+✔ missing build or invalid base never reports success (182.323023ms)
+✔ refuses success when the repository scan scope is empty (104.649012ms)
+✔ empty dist never reports a successful client build scan (114.519598ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1350.408571
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run lint
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 lint
+> eslint .
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run typecheck
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 typecheck
+> tsc --noEmit
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run build
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 34 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB │ gzip:  0.33 kB
+dist/assets/index-BnUggF0c.css   15.07 kB │ gzip:  4.16 kB
+dist/assets/index-B5p5jD2r.js   248.58 kB │ gzip: 78.49 kB
+✓ built in 2.62s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm_config_cache=/tmp/ir-npm-cache npm audit
+EXIT CODE: 0
+found 0 vulnerabilities
+
+
+COMMAND: PLAYWRIGHT_HTML_OUTPUT_DIR=/tmp/ir-p2-audit-browser-report PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/ir-p2-audit-browser.json npm run test:e2e -- --reporter=list,json,html
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test --reporter=list,json,html
+
+[WebServer] (node:27190) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:27203) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 34 tests using 1 worker
+
+(node:27287) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/docx.spec.ts:187:1 › supported DOCX completes preflight, durable review and actual Chinese/bilingual downloads (5.6s)
+  ✓   2 [chromium] › tests/docx.spec.ts:303:1 › formatting warnings require explicit acknowledgment and can be cancelled (1.0s)
+  ✓   3 [chromium] › tests/docx.spec.ts:320:3 › unsupported drawing is explicitly blocked before document task creation (1.1s)
+  ✓   4 [chromium] › tests/docx.spec.ts:320:3 › unsupported merged is explicitly blocked before document task creation (1.1s)
+  ✓   5 [chromium] › tests/docx.spec.ts:338:1 › fake extension and corrupt DOCX cannot create document tasks (1.1s)
+  ✓   6 [chromium] › tests/docx.spec.ts:364:1 › oversized DOCX is rejected by the browser and the raw server boundary (2.3s)
+  ✓   7 [chromium] › tests/docx.spec.ts:387:1 › repeated upload clicks send one request and cancellation ignores the late preflight result (1.2s)
+  ✓   8 [chromium] › tests/docx.spec.ts:435:1 › switching tasks aborts pending preflight and does not restore its late preview (1.2s)
+  ✓   9 [chromium] › tests/docx.spec.ts:475:1 › document translation cancellation keeps export disabled until remaining paragraphs recover (4.1s)
+  ✓  10 [chromium] › tests/docx.spec.ts:498:1 › partial document failure can retry without replacing another manually saved paragraph (5.1s)
+  ✓  11 [chromium] › tests/docx.spec.ts:522:1 › mode change during document task creation leaves a draft in the list without auto-translation (2.6s)
+  ✓  12 [chromium] › tests/workbench.spec.ts:58:1 › input bounds, explicit simulation label, save/reopen and text export (3.5s)
+  ✓  13 [chromium] › tests/workbench.spec.ts:115:1 › local retranslation preserves other saved edits and edits made while response is pending (4.6s)
+  ✓  14 [chromium] › tests/workbench.spec.ts:141:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (2.7s)
+  ✓  15 [chromium] › tests/workbench.spec.ts:166:1 › newer typing during a pending save remains editable and saves with the rebased revision (2.5s)
+  ✓  16 [chromium] › tests/workbench.spec.ts:208:1 › a model response arriving before save requires acknowledgment before replacing the newer result (4.7s)
+  ✓  17 [chromium] › tests/workbench.spec.ts:240:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (1.9s)
+  ✓  18 [chromium] › tests/workbench.spec.ts:302:1 › a delayed failed create retains the original input and unlocks exactly one retry (1.8s)
+  ✓  19 [chromium] › tests/workbench.spec.ts:368:1 › a service mode change during create retains the original draft and does not auto-translate (2.6s)
+  ✓  20 [chromium] › tests/workbench.spec.ts:426:1 › a temporary config read failure is visible and clears after recovery without a reload (2.9s)
+  ✓  21 [chromium] › tests/workbench.spec.ts:450:1 › config recovery clears its own error while retaining a newer action failure (4.2s)
+  ✓  22 [chromium] › tests/workbench.spec.ts:486:1 › a successful save keeps its notice while a list-read error appears and then clears after recovery (2.4s)
+  ✓  23 [chromium] › tests/workbench.spec.ts:541:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests (6.6s)
+  ✓  24 [chromium] › tests/workbench.spec.ts:572:1 › a hanging config request times out, aborts transport, then recovers on the next serial attempt (7.6s)
+  ✓  25 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (7.6s)
+  ✓  26 [chromium] › tests/workbench.spec.ts:653:1 › consecutive config 503 responses are shown in order before a later success clears the error (4.2s)
+  ✓  27 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late success (2.4s)
+  ✓  28 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late failure (2.1s)
+  ✓  29 [chromium] › tests/workbench.spec.ts:729:1 › reload and full document navigation close pending config streams without accumulating requests (8.5s)
+  ✓  30 [chromium] › tests/workbench.spec.ts:808:3 › mock timeout: finite failure, visible state and recovery (10.9s)
+  ✓  31 [chromium] › tests/workbench.spec.ts:808:3 › mock rate-limit: finite failure, visible state and recovery (4.3s)
+  ✓  32 [chromium] › tests/workbench.spec.ts:808:3 › mock server-error: finite failure, visible state and recovery (4.2s)
+  ✓  33 [chromium] › tests/workbench.spec.ts:808:3 › mock malformed: finite failure, visible state and recovery (3.0s)
+  ✓  34 [chromium] › tests/workbench.spec.ts:808:3 › mock partial: finite failure, visible state and recovery (3.8s)
+
+  34 passed (2.2m)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+Browser result: {
+  "stats": {
+    "startTime": "2026-10-26T04:05:51.781Z",
+    "duration": 129388.388,
+    "expected": 34,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "errors": []
+}
+
+RESOURCE REPRO: node --import tsx --input-type=module; undefinedEntitiesFixture(600000), wrap SaxesParser.prototype.fail with a counter, parseDocx 3 times, require code INVALID_XML and exactly one fail per parse. The deterministic regression is server/docx/audit.test.ts. No fake timers or skipped entity scan.
+EXIT CODE: 0
+{
+  "entityCount": 600000,
+  "uploadBytes": 1803231,
+  "result": [
+    {
+      "attempt": 1,
+      "code": "INVALID_XML",
+      "parserErrors": 1,
+      "wallMs": 21.034455999999977,
+      "cpuMs": 23.618
+    },
+    {
+      "attempt": 2,
+      "code": "INVALID_XML",
+      "parserErrors": 1,
+      "wallMs": 16.292798000000005,
+      "cpuMs": 17.013
+    },
+    {
+      "attempt": 3,
+      "code": "INVALID_XML",
+      "parserErrors": 1,
+      "wallMs": 17.383081000000004,
+      "cpuMs": 18.156
+    }
+  ]
+}
+
+
+COMMAND: regenerate synthetic saved task via current exportDocx(task,mode), exactly as docs/evidence/p2-render/README.md, with /tmp/ir-p2-audit-exports output. No model call.
+EXIT CODE: 0
+
+COMMAND: python scripts/render-docx-evidence.py /tmp/ir-p2-audit-exports/chinese.docx /tmp/ir-p2-audit-exports/bilingual.docx --task-json /tmp/ir-p2-audit-exports/task.json --output /tmp/ir-p2-audit-render
+EXIT CODE: 0
+RUN ["soffice", "--version"]
+RUN ["pdftoppm", "-v"]
+Rendering synthetic sample: chinese.docx
+RUN ["soffice", "-env:UserInstallation=file:///tmp/ir-docx-render-xyh16bfg/chinese/profile", "--headless", "--convert-to", "pdf:writer_pdf_Export", "--outdir", "/tmp/ir-docx-render-xyh16bfg/chinese", "/tmp/ir-p2-audit-exports/chinese.docx"]
+RUN ["pdftoppm", "-png", "-r", "110", "/tmp/ir-p2-audit-render/chinese.pdf", "/tmp/ir-p2-audit-render/chinese"]
+RESULT chinese.docx: pages=1, missing=0, marker=True
+Rendering synthetic sample: bilingual.docx
+RUN ["soffice", "-env:UserInstallation=file:///tmp/ir-docx-render-xyh16bfg/bilingual/profile", "--headless", "--convert-to", "pdf:writer_pdf_Export", "--outdir", "/tmp/ir-docx-render-xyh16bfg/bilingual", "/tmp/ir-p2-audit-exports/bilingual.docx"]
+RUN ["pdftoppm", "-png", "-r", "110", "/tmp/ir-p2-audit-render/bilingual.pdf", "/tmp/ir-p2-audit-render/bilingual"]
+RESULT bilingual.docx: pages=1, missing=0, marker=True
+Evidence report: /tmp/ir-p2-audit-render/render-report.json; exit=0
+
+{
+  "scope": "Synthetic exports only; LibreOffice rendering does not establish Microsoft Word compatibility, page fidelity, or translation quality.",
+  "commands": [
+    {
+      "command": [
+        "soffice",
+        "--version"
+      ],
+      "exitCode": 0,
+      "seconds": 0.265,
+      "stdout": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5\n\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-v"
+      ],
+      "exitCode": 0,
+      "seconds": 0.028,
+      "stdout": "",
+      "stderr": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC\n"
+    },
+    {
+      "command": [
+        "soffice",
+        "-env:UserInstallation=file:///tmp/ir-docx-render-xyh16bfg/chinese/profile",
+        "--headless",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        "/tmp/ir-docx-render-xyh16bfg/chinese",
+        "/tmp/ir-p2-audit-exports/chinese.docx"
+      ],
+      "exitCode": 0,
+      "seconds": 0.908,
+      "stdout": "convert /tmp/ir-p2-audit-exports/chinese.docx as a Writer document -> /tmp/ir-docx-render-xyh16bfg/chinese/chinese.pdf using filter : writer_pdf_Export\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-png",
+        "-r",
+        "110",
+        "/tmp/ir-p2-audit-render/chinese.pdf",
+        "/tmp/ir-p2-audit-render/chinese"
+      ],
+      "exitCode": 0,
+      "seconds": 0.142,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "soffice",
+        "-env:UserInstallation=file:///tmp/ir-docx-render-xyh16bfg/bilingual/profile",
+        "--headless",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        "/tmp/ir-docx-render-xyh16bfg/bilingual",
+        "/tmp/ir-p2-audit-exports/bilingual.docx"
+      ],
+      "exitCode": 0,
+      "seconds": 0.508,
+      "stdout": "convert /tmp/ir-p2-audit-exports/bilingual.docx as a Writer document -> /tmp/ir-docx-render-xyh16bfg/bilingual/bilingual.pdf using filter : writer_pdf_Export\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pdftoppm",
+        "-png",
+        "-r",
+        "110",
+        "/tmp/ir-p2-audit-render/bilingual.pdf",
+        "/tmp/ir-p2-audit-render/bilingual"
+      ],
+      "exitCode": 0,
+      "seconds": 0.146,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "files": [
+    {
+      "sourceFilename": "chinese.docx",
+      "sourceBytes": 10761,
+      "pdf": "chinese.pdf",
+      "pages": 1,
+      "pageSizesPt": [
+        [
+          595.303955078125,
+          841.8897705078125
+        ]
+      ],
+      "fonts": [
+        "BAAAAA+LiberationSans",
+        "CAAAAA+NotoSansCJKsc-Regular",
+        "DAAAAA+NotoSansCJKsc-Regular",
+        "EAAAAA+LiberationSans"
+      ],
+      "structure": [
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "[模拟文档·非实际翻译] 中文译文。包含模拟占位内容，请勿作为正式材料使用。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Heading 1",
+          "text": "合成 IR 更新"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "尊敬的合成投资人：\n以下仅为流程样本。\t2026 年。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "• 人工审校：合成机器人平台。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "1. 首个里程碑。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": ""
+        },
+        {
+          "kind": "table",
+          "rows": [
+            [
+              [
+                "指标",
+                "季度"
+              ],
+              [
+                "数值"
+              ]
+            ],
+            [
+              [
+                "收入"
+              ],
+              [
+                "1,200 万美元（USD 12 million）",
+                "2026 年合成预测。"
+              ]
+            ]
+          ]
+        }
+      ],
+      "nonemptyParagraphs": 11,
+      "missingVisibleParagraphs": [],
+      "requiredMarker": "模拟",
+      "requiredMarkerVisible": true,
+      "savedTaskComparison": {
+        "taskId": "synthetic-render-task",
+        "mode": "chinese",
+        "structuralParagraphs": 11,
+        "translatableParagraphs": 10,
+        "expectedParagraphsAfterNotice": 11,
+        "actualParagraphsAfterNotice": 11,
+        "exactParagraphOrderAndText": true,
+        "humanEditedIdsAndRevisions": {
+          "p0001": 1,
+          "p0002": 1,
+          "p0003": 3,
+          "p0004": 1,
+          "p0005": 1,
+          "p0006": 1,
+          "p0007": 1,
+          "p0008": 1,
+          "p0009": 1,
+          "p0010": 1
+        }
+      }
+    },
+    {
+      "sourceFilename": "bilingual.docx",
+      "sourceBytes": 10961,
+      "pdf": "bilingual.pdf",
+      "pages": 1,
+      "pageSizesPt": [
+        [
+          595.303955078125,
+          841.8897705078125
+        ]
+      ],
+      "fonts": [
+        "BAAAAA+LiberationSans",
+        "CAAAAA+NotoSansCJKsc-Regular",
+        "DAAAAA+NotoSansCJKsc-Regular",
+        "EAAAAA+LiberationSans"
+      ],
+      "structure": [
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "[模拟文档·非实际翻译] 中英对照，每组先原文后译文。包含模拟占位内容，请勿作为正式材料使用。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "Synthetic IR update"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Heading 1",
+          "text": "合成 IR 更新"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "Dear synthetic investor."
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "尊敬的合成投资人：\n以下仅为流程样本。\t2026 年。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "• Robotics platform."
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "• 人工审校：合成机器人平台。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "1. First milestone."
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": "1. 首个里程碑。"
+        },
+        {
+          "kind": "paragraph",
+          "style": "Normal",
+          "text": ""
+        },
+        {
+          "kind": "table",
+          "rows": [
+            [
+              [
+                "Metric",
+                "指标",
+                "Quarter",
+                "季度"
+              ],
+              [
+                "Value",
+                "数值"
+              ]
+            ],
+            [
+              [
+                "Revenue",
+                "收入"
+              ],
+              [
+                "USD 12 million",
+                "1,200 万美元（USD 12 million）",
+                "Synthetic estimate.",
+                "2026 年合成预测。"
+              ]
+            ]
+          ]
+        }
+      ],
+      "nonemptyParagraphs": 21,
+      "missingVisibleParagraphs": [],
+      "requiredMarker": "模拟",
+      "requiredMarkerVisible": true,
+      "savedTaskComparison": {
+        "taskId": "synthetic-render-task",
+        "mode": "bilingual",
+        "structuralParagraphs": 11,
+        "translatableParagraphs": 10,
+        "expectedParagraphsAfterNotice": 21,
+        "actualParagraphsAfterNotice": 21,
+        "exactParagraphOrderAndText": true,
+        "humanEditedIdsAndRevisions": {
+          "p0001": 1,
+          "p0002": 1,
+          "p0003": 3,
+          "p0004": 1,
+          "p0005": 1,
+          "p0006": 1,
+          "p0007": 1,
+          "p0008": 1,
+          "p0009": 1,
+          "p0010": 1
+        }
+      }
+    }
+  ],
+  "libreOfficeVersion": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+  "popplerVersion": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC",
+  "exitCode": 0
+}
+
+
+Both complete rendered pages viewed: Chinese and bilingual CJK text, headings, fixed labels and 2x2 table readable; no obvious clipping/tofu. Exact saved paragraph order/text true, missing visible paragraphs zero. Prior committed render images show identical content. Microsoft Word not run; no claim of Word compatibility or professional quality.
+
+Implementation development failures retained as findings: initial targeted suite4 failures because old boolean props were wrongly given superscript (now valid1; explicit invalid-value rejection tested separately); initial typecheck2 because test spy this lacked annotation (fixed). Final full suite344+9 and final lint/typecheck passed after binding fixture parts with correct relationships/content types.
+
+Dependencies and lockfile unchanged in this repair. npm ci not rerun; prior P2 install evidence remains historical. No real API or Microsoft Word verification. Independent read-only focused review32 assertions passed; parent acceptance remains pending.
+Manual public-content review: reviewed complete changed/new sources and documentation/evidence; only synthetic strings and temp paths, no credentials/user materials. Existing historical synthetic screenshots/render artifacts remain reviewed. Generated SQLite/Playwright downloads/reports stay ignored. Known-pattern full HEAD/index/worktree/history/client scan follows below; it is not an exhaustive secret guarantee.
+
+COMMAND: npm run format:check
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: npm run check:public -- --base a44ecb2 (pre-stage full scan)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD 216efea8966053781983047df8bc7d92aa0b9743; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..216efea8966053781983047df8bc7d92aa0b9743.
+File snapshots: HEAD=66, index=66, worktree=69, history=97 across 4 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+
+COMMAND: git diff --check
+EXIT CODE: 0
+No whitespace errors.
+
+COMMAND: npm run check:public -- --base a44ecb2 (complete staged scope)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD 216efea8966053781983047df8bc7d92aa0b9743; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..216efea8966053781983047df8bc7d92aa0b9743.
+File snapshots: HEAD=66, index=69, worktree=69, history=97 across 4 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: git diff --cached --check
+EXIT CODE: 0
+All intended changes staged and reviewed, no whitespace errors.

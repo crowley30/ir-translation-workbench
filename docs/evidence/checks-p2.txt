@@ -1,0 +1,183 @@
+P2 DOCX verification — 2026-10-26 UTC
+Accepted P0/P1 mock baseline: 22909dca2dfdfd86d44694cac35221d7d9f09b2c.
+All fixtures and saved translation snapshots synthetic; no real API/credentials/fees, no Word claim.
+
+COMMAND: npm_config_cache=/tmp/ir-npm-cache npm ci
+EXIT CODE: 0
+added337packages in7s; lockfile install verified.
+
+COMMAND: npm test
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test
+> vitest run && npm run test:public
+
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+
+ Test Files  7 passed (7)
+      Tests  240 passed (240)
+   Start at  03:27:27
+   Duration  12.86s (tests 82%, import 10%, transform 7%)
+
+
+> ir-translation-workbench@0.1.0 test:public
+> node --test scripts/check-public.test.mjs
+
+✔ empty staged diff still scans HEAD, index and working files (136.037326ms)
+✔ rejects synthetic credential in tracked worktree when staging is empty (122.191292ms)
+✔ checks complete staged snapshots even after worktree cleanup (126.32201ms)
+✔ checks nonignored untracked intended files and runtime artifacts (144.940154ms)
+✔ base range scans intermediate committed blobs removed before HEAD (274.877249ms)
+✔ client build still requires separation from provider config and credentials (112.07635ms)
+✔ missing build or invalid base never reports success (181.62668ms)
+✔ refuses success when the repository scan scope is empty (141.511469ms)
+✔ empty dist never reports a successful client build scan (115.162491ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1446.222141
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run build
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 34 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB │ gzip:  0.33 kB
+dist/assets/index-BnUggF0c.css   15.07 kB │ gzip:  4.16 kB
+dist/assets/index-B5p5jD2r.js   248.58 kB │ gzip: 78.49 kB
+✓ built in 4.32s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm_config_cache=/tmp/ir-npm-cache npm audit
+EXIT CODE: 0
+found 0 vulnerabilities
+
+COMMAND: npm run lint
+EXIT CODE: 0
+ESLint project pass.
+
+COMMAND: npm run typecheck
+EXIT CODE: 0
+TypeScript project pass.
+
+COMMAND: npm run test:e2e -- tests/docx.spec.ts
+EXIT CODE: 0
+11/11 passed;38875.686ms. Initial new-flow run passed without product corrections.
+
+COMMAND: npm run test:e2e
+EXIT CODE: 0
+34expected/0unexpected/0flaky/0skipped;160470.705ms.
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test
+
+[WebServer] (node:22593) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:22606) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 34 tests using 1 worker
+
+(node:22678) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/docx.spec.ts:187:1 › supported DOCX completes preflight, durable review and actual Chinese/bilingual downloads (5.5s)
+  ✓   2 [chromium] › tests/docx.spec.ts:293:1 › formatting warnings require explicit acknowledgment and can be cancelled (1.3s)
+  ✓   3 [chromium] › tests/docx.spec.ts:310:3 › unsupported drawing is explicitly blocked before document task creation (1.3s)
+  ✓   4 [chromium] › tests/docx.spec.ts:310:3 › unsupported merged is explicitly blocked before document task creation (962ms)
+  ✓   5 [chromium] › tests/docx.spec.ts:328:1 › fake extension and corrupt DOCX cannot create document tasks (1.2s)
+  ✓   6 [chromium] › tests/docx.spec.ts:354:1 › oversized DOCX is rejected by the browser and the raw server boundary (2.1s)
+  ✓   7 [chromium] › tests/docx.spec.ts:377:1 › repeated upload clicks send one request and cancellation ignores the late preflight result (1.5s)
+  ✓   8 [chromium] › tests/docx.spec.ts:425:1 › switching tasks aborts pending preflight and does not restore its late preview (1.1s)
+  ✓   9 [chromium] › tests/docx.spec.ts:465:1 › document translation cancellation keeps export disabled until remaining paragraphs recover (4.4s)
+  ✓  10 [chromium] › tests/docx.spec.ts:488:1 › partial document failure can retry without replacing another manually saved paragraph (5.1s)
+  ✓  11 [chromium] › tests/docx.spec.ts:512:1 › mode change during document task creation leaves a draft in the list without auto-translation (3.0s)
+  ✓  12 [chromium] › tests/workbench.spec.ts:58:1 › input bounds, explicit simulation label, save/reopen and text export (3.8s)
+  ✓  13 [chromium] › tests/workbench.spec.ts:115:1 › local retranslation preserves other saved edits and edits made while response is pending (4.7s)
+  ✓  14 [chromium] › tests/workbench.spec.ts:141:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (2.8s)
+  ✓  15 [chromium] › tests/workbench.spec.ts:166:1 › newer typing during a pending save remains editable and saves with the rebased revision (3.2s)
+  ✓  16 [chromium] › tests/workbench.spec.ts:208:1 › a model response arriving before save requires acknowledgment before replacing the newer result (11.4s)
+  ✓  17 [chromium] › tests/workbench.spec.ts:240:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (13.8s)
+  ✓  18 [chromium] › tests/workbench.spec.ts:302:1 › a delayed failed create retains the original input and unlocks exactly one retry (3.5s)
+  ✓  19 [chromium] › tests/workbench.spec.ts:368:1 › a service mode change during create retains the original draft and does not auto-translate (3.9s)
+  ✓  20 [chromium] › tests/workbench.spec.ts:426:1 › a temporary config read failure is visible and clears after recovery without a reload (4.0s)
+  ✓  21 [chromium] › tests/workbench.spec.ts:450:1 › config recovery clears its own error while retaining a newer action failure (4.5s)
+  ✓  22 [chromium] › tests/workbench.spec.ts:486:1 › a successful save keeps its notice while a list-read error appears and then clears after recovery (5.4s)
+  ✓  23 [chromium] › tests/workbench.spec.ts:541:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests (7.0s)
+  ✓  24 [chromium] › tests/workbench.spec.ts:572:1 › a hanging config request times out, aborts transport, then recovers on the next serial attempt (7.7s)
+  ✓  25 [chromium] › tests/workbench.spec.ts:603:1 › the config deadline also aborts a hanging response body and closes the streaming connection (7.8s)
+  ✓  26 [chromium] › tests/workbench.spec.ts:653:1 › consecutive config 503 responses are shown in order before a later success clears the error (4.1s)
+  ✓  27 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late success (2.0s)
+  ✓  28 [chromium] › tests/workbench.spec.ts:673:3 › switching tasks aborts a pending old detail read and ignores its late failure (2.1s)
+  ✓  29 [chromium] › tests/workbench.spec.ts:729:1 › reload and full document navigation close pending config streams without accumulating requests (8.5s)
+  ✓  30 [chromium] › tests/workbench.spec.ts:808:3 › mock timeout: finite failure, visible state and recovery (11.0s)
+  ✓  31 [chromium] › tests/workbench.spec.ts:808:3 › mock rate-limit: finite failure, visible state and recovery (5.4s)
+  ✓  32 [chromium] › tests/workbench.spec.ts:808:3 › mock server-error: finite failure, visible state and recovery (4.4s)
+  ✓  33 [chromium] › tests/workbench.spec.ts:808:3 › mock malformed: finite failure, visible state and recovery (2.8s)
+  ✓  34 [chromium] › tests/workbench.spec.ts:808:3 › mock partial: finite failure, visible state and recovery (3.9s)
+
+  34 passed (2.7m)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+Full34 HTML report: /tmp/ir-docx-full-report/index.html (temporary,not committed).
+Screenshot-only targeted happy case rerun passed1/1;65691.125ms including startup,33.9s case under VM load. Product unchanged; only extra screenshot assertions/capture.
+
+COMMAND: python scripts/render-docx-evidence.py /tmp/ir-p2-exports/chinese.docx /tmp/ir-p2-exports/bilingual.docx --task-json /tmp/ir-p2-exports/task.json --output docs/evidence/p2-render
+EXIT CODE: 0
+See docs/evidence/p2-render/render-report.json for exact commands,renderer versions,page counts,PDFtext and saved-task comparison. Chinese1page,bilingual1page; all pages viewed; exact OOXML text/order comparison true and missing visible text0. Microsoft Word not run.
+
+Known review gaps caught before final run and regression-covered: field/unknown attribute-only leaves, inheritance/partial numbering/ancestor starts, unsupported restart, cell/numbering revisions, semantic formatting, ambiguous content types. No raw input archive written to disk or copied into exports.
+
+Manual public-content review: generated evidence contains synthetic source/manual text only; screenshots viewed. Databases,node_modules,dist,.env,original browser reports/downloads remain ignored. App dependencies locked; no paid services or deployment.
+
+COMMAND: npm run format:check
+EXIT CODE: 0
+All matched files use Prettier code style.
+
+COMMAND: git diff --cached --check
+EXIT CODE: 0
+No whitespace errors.
+
+COMMAND: npm run check:public -- --base a44ecb2
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD 22909dca2dfdfd86d44694cac35221d7d9f09b2c; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..22909dca2dfdfd86d44694cac35221d7d9f09b2c.
+File snapshots: HEAD=40, index=66, worktree=66, history=61 across 3 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

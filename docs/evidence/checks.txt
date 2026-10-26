@@ -1,0 +1,130 @@
+P0/P1 verification — 2026-10-26 UTC
+All inputs synthetic. No real provider calls, credentials, deployment, or professional translation quality evaluation.
+
+COMMAND: npm_config_cache=/tmp/ir-npm-cache npm ci
+EXIT CODE: 0
+added 314 packages in 5s (clean install; existing ESLint 9 maintenance notice)
+
+COMMAND: npm run lint
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 lint
+> eslint .
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run typecheck
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 typecheck
+> tsc --noEmit
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm test
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench
+
+
+ Test Files  3 passed (3)
+      Tests  64 passed (64)
+   Start at  01:59:01
+   Duration  3.59s (tests 62%, transform 20%, import 17%, worker 1%)
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run build
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 31 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB │ gzip:  0.33 kB
+dist/assets/index-CH5_mdKY.css   12.52 kB │ gzip:  3.61 kB
+dist/assets/index-DsYkrN0B.js   238.03 kB │ gzip: 75.30 kB
+✓ built in 2.33s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run test:e2e
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test
+
+[WebServer] (node:4462) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:4477) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 12 tests using 1 worker
+
+(node:4565) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/workbench.spec.ts:42:1 › input bounds, explicit simulation label, save/reopen and text export (3.1s)
+  ✓   2 [chromium] › tests/workbench.spec.ts:99:1 › local retranslation preserves other saved edits and edits made while response is pending (4.5s)
+  ✓   3 [chromium] › tests/workbench.spec.ts:125:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (2.3s)
+  ✓   4 [chromium] › tests/workbench.spec.ts:150:1 › newer typing during a pending save remains editable and saves with the rebased revision (2.2s)
+  ✓   5 [chromium] › tests/workbench.spec.ts:192:1 › a model response arriving before save requires acknowledgment before replacing the newer result (3.9s)
+  ✓   6 [chromium] › tests/workbench.spec.ts:224:1 › two immediate create clicks result in one persisted task (1.3s)
+  ✓   7 [chromium] › tests/workbench.spec.ts:242:1 › a temporary config read failure recovers without a page reload (1.0s)
+  ✓   8 [chromium] › tests/workbench.spec.ts:263:3 › mock timeout: finite failure, visible state and recovery (11.2s)
+  ✓   9 [chromium] › tests/workbench.spec.ts:263:3 › mock rate-limit: finite failure, visible state and recovery (4.0s)
+  ✓  10 [chromium] › tests/workbench.spec.ts:263:3 › mock server-error: finite failure, visible state and recovery (3.9s)
+  ✓  11 [chromium] › tests/workbench.spec.ts:263:3 › mock malformed: finite failure, visible state and recovery (2.6s)
+  ✓  12 [chromium] › tests/workbench.spec.ts:263:3 › mock partial: finite failure, visible state and recovery (3.7s)
+
+  12 passed (48.7s)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm_config_cache=/tmp/ir-npm-cache npm audit
+EXIT CODE: 0
+found 0 vulnerabilities
+
+COMMAND: npm run format:check
+EXIT CODE: 0
+All matched files use Prettier code style!
+
+COMMAND: npm run check:public
+EXIT CODE: 0
+Staged files inspected for common credential patterns/runtime artifacts. Client build contains no server provider configuration.
+
+COMMAND: git diff --check
+EXIT CODE: 0
+No whitespace errors.
+
+COMMAND: git check-ignore .data/workbench.sqlite test-results/e2e.sqlite playwright-report/index.html .env
+EXIT CODE: 0
+All four runtime/environment paths correctly ignored.
+
+Manual staged-content review: source/tests/docs contain synthetic inputs only; both committed screenshots viewed. No database, .env, node_modules, dist, raw browser reports, or real user data staged.
+Chromium 154.0.8037.57; viewport 1440x1000. Browser download not run (system binary available).
