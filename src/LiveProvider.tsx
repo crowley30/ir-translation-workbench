@@ -37,7 +37,12 @@ function validStatus(value: LiveProviderStatus): boolean {
   );
 }
 
-export default function LiveProvider({ disabled = false }: { disabled?: boolean }) {
+interface Props {
+  disabled?: boolean;
+  onStatusChange?: (value: LiveProviderStatus | null) => void;
+  onEmergencyStop?: () => void;
+}
+export default function LiveProvider({ disabled = false, onStatusChange, onEmergencyStop }: Props) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<LiveProviderStatus | null>(null);
   const [budget, setBudget] = useState('');
@@ -51,47 +56,66 @@ export default function LiveProvider({ disabled = false }: { disabled?: boolean 
   const mounted = useRef(true);
   const lock = useRef(false);
   const readLock = useRef(false);
+  const emergencyLock = useRef(false);
   const generation = useRef(0);
-  const initialLoaded = useRef(false);
   const controller = useRef<AbortController | null>(null);
+  const publishStatus = useCallback(
+    (value: LiveProviderStatus | null) => {
+      setStatus(value);
+      onStatusChange?.(value);
+    },
+    [onStatusChange],
+  );
   const disposeRequests = useCallback(() => {
     mounted.current = false;
     generation.current++;
+    readLock.current = false;
+    lock.current = false;
+    emergencyLock.current = false;
     controller.current?.abort();
   }, []);
   useEffect(() => {
     mounted.current = true;
     return disposeRequests;
   }, [disposeRequests]);
-  const readStatus = useCallback(async () => {
-    if (!mounted.current || lock.current || readLock.current) return;
-    readLock.current = true;
-    const current = ++generation.current;
-    const request = new AbortController();
-    controller.current?.abort();
-    controller.current = request;
-    setLoading(true);
-    setError('');
-    setNotice('');
-    try {
-      const value = await api<LiveProviderStatus>('/live-provider', { signal: request.signal });
-      if (!mounted.current || current !== generation.current) return;
-      if (!validStatus(value)) throw new Error('服务返回的调用状态无效，请重新读取。');
-      initialLoaded.current = true;
-      setStatus(value);
-    } catch (problem) {
-      if (mounted.current && current === generation.current)
-        setError(problem instanceof Error ? problem.message : '无法读取调用状态。');
-    } finally {
-      if (current === generation.current) {
-        readLock.current = false;
-        if (mounted.current) setLoading(false);
+  const readStatus = useCallback(
+    async (preserveError = false) => {
+      if (!mounted.current || lock.current || readLock.current || emergencyLock.current) return;
+      readLock.current = true;
+      const current = ++generation.current;
+      const request = new AbortController();
+      controller.current?.abort();
+      controller.current = request;
+      setLoading(true);
+      publishStatus(null);
+      if (!preserveError) {
+        setError('');
+        setNotice('');
       }
-    }
-  }, []);
+      try {
+        const value = await api<LiveProviderStatus>('/live-provider', { signal: request.signal });
+        if (!mounted.current || current !== generation.current) return;
+        if (!validStatus(value)) throw new Error('服务返回的调用状态无效，请重新读取。');
+        publishStatus(value);
+      } catch (problem) {
+        if (mounted.current && current === generation.current) {
+          publishStatus(null);
+          setError(problem instanceof Error ? problem.message : '无法读取调用状态。');
+        }
+      } finally {
+        if (current === generation.current) {
+          readLock.current = false;
+          if (mounted.current) setLoading(false);
+        }
+      }
+    },
+    [publishStatus],
+  );
   useEffect(() => {
-    if (open && !initialLoaded.current) void readStatus();
-  }, [open, readStatus]);
+    // Reading this local control endpoint cannot contact the provider. Always
+    // synchronize on mount, including when the disclosure remains closed.
+    void readStatus();
+  }, [readStatus]);
 
   const budgetMicros = budgetAmount(budget);
   const tokens = /^\d{1,5}$/.test(outputTokens) ? Number(outputTokens) : 0;
@@ -119,26 +143,41 @@ export default function LiveProvider({ disabled = false }: { disabled?: boolean 
   const busy = disabled || loading || !!action;
 
   async function changeMode(kind: 'start' | 'stop' | 'mock') {
-    if (disabled || lock.current || readLock.current || !status || (kind === 'start' && !canStart))
+    const emergency = kind !== 'start';
+    if (
+      emergency
+        ? emergencyLock.current
+        : disabled || lock.current || readLock.current || !status || !canStart
+    )
       return;
-    lock.current = true;
+    if (emergency) {
+      emergencyLock.current = true;
+      onEmergencyStop?.();
+      // Stops may preempt a pending status read or start response. Aborting the
+      // wait is not a claim that the previous server mutation was rolled back.
+      readLock.current = false;
+      lock.current = false;
+      setLoading(false);
+    } else lock.current = true;
     const current = ++generation.current;
     const request = new AbortController();
     controller.current?.abort();
     controller.current = request;
+    publishStatus(null);
     setAction(kind);
     setError('');
     setNotice('');
     const body: StartLiveProvider | Record<string, never> =
       kind === 'start'
         ? {
-            expectedRevision: status.settingsRevision,
+            expectedRevision: status!.settingsRevision,
             acknowledgeCosts: true,
             confirmDataTransfer: true,
             budgetMicros: budgetMicros!,
             maxOutputTokens: tokens,
           }
         : {};
+    let reconcile = false;
     try {
       const value = await api<LiveProviderStatus>(`/live-provider/${kind}`, {
         method: 'POST',
@@ -147,8 +186,7 @@ export default function LiveProvider({ disabled = false }: { disabled?: boolean 
       });
       if (!mounted.current || current !== generation.current) return;
       if (!validStatus(value)) throw new Error('服务返回的调用状态无效，请重新读取确认结果。');
-      setStatus(value);
-      initialLoaded.current = true;
+      publishStatus(value);
       setCostsAccepted(false);
       setDataAccepted(false);
       setNotice(
@@ -159,21 +197,37 @@ export default function LiveProvider({ disabled = false }: { disabled?: boolean 
             : '已切回模拟模式并取消运行中的任务。已有真实任务保留其模式，累计预算不会重置。',
       );
     } catch (problem) {
-      if (mounted.current && current === generation.current)
+      if (mounted.current && current === generation.current) {
+        publishStatus(null);
         setError(
           problem instanceof Error
             ? problem.message
-            : '调用状态更改未成功，请刷新后确认；当前表单已保留。',
+            : '调用状态更改未成功，正在重新读取确认；当前表单已保留。',
         );
+        reconcile = true;
+      }
     } finally {
-      lock.current = false;
-      if (mounted.current && current === generation.current) setAction('');
+      if (current === generation.current) {
+        lock.current = false;
+        emergencyLock.current = false;
+        if (mounted.current) {
+          setAction('');
+          if (reconcile) void readStatus(true);
+        }
+      }
     }
   }
   return (
     <details className="live-provider" onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>
-        真实调用控制 <span>{status ? MODE_LABEL[status.mode] : '默认关闭 · 需明确启用'}</span>
+        真实调用控制{' '}
+        <span>
+          {status
+            ? `调用状态：${MODE_LABEL[status.mode]}`
+            : loading
+              ? '调用状态未知 · 正在同步'
+              : '调用状态未知 · 请重新读取'}
+        </span>
       </summary>
       <div className="provider-settings-body">
         <div className="provider-settings-explainer">
@@ -184,7 +238,7 @@ export default function LiveProvider({ disabled = false }: { disabled?: boolean 
           </p>
         </div>
         {loading && <p role="status">正在读取调用状态…</p>}
-        {status && (
+        {open && status && (
           <>
             <div className="provider-settings-status" role="status">
               <span>{MODE_LABEL[status.mode]}</span>
@@ -292,14 +346,14 @@ export default function LiveProvider({ disabled = false }: { disabled?: boolean 
             </button>
             <button
               type="button"
-              disabled={busy || !status || status.mode !== 'live'}
+              disabled={action === 'stop' || action === 'mock'}
               onClick={() => void changeMode('stop')}
             >
               停止真实调用
             </button>
             <button
               type="button"
-              disabled={busy || !status || status.mode === 'mock'}
+              disabled={action === 'stop' || action === 'mock'}
               onClick={() => void changeMode('mock')}
             >
               切回模拟模式

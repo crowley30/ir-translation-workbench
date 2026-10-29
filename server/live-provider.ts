@@ -41,6 +41,7 @@ export class LiveProviderRuntime {
   private active: TranslationAdapter | null = null;
   private activeRevision = -1;
   private outputTokens = 4096;
+  private stopPersistenceFailed = false;
   private readonly transport: OpenAITransport;
   constructor(
     private readonly store: ProviderSettingsStore,
@@ -53,7 +54,13 @@ export class LiveProviderRuntime {
       operatorCapMicros: operatorCap(environment),
       prices: Object.fromEntries(OPENAI_MODELS.map((model) => [model.id, model])),
     });
-    if (this.ledger.summary().initialized) this.ledger.disarm();
+    if (this.ledger.summary().initialized) {
+      try {
+        this.ledger.disarm();
+      } catch {
+        this.stopPersistenceFailed = true;
+      }
+    }
     const state = {
       mode: (): 'mock' | 'real' => (this.selectedReal ? 'real' : 'mock'),
       ready: () => (this.selectedReal ? this.isActive() : mock.ready),
@@ -84,6 +91,8 @@ export class LiveProviderRuntime {
   private isActive(): boolean {
     return (
       !!this.active &&
+      this.active.ready &&
+      !this.stopPersistenceFailed &&
       this.environment.ALLOW_REAL_TRANSLATION === 'true' &&
       this.ledger.summary().armed &&
       readProviderConfiguration(this.store).revision === this.activeRevision
@@ -101,17 +110,19 @@ export class LiveProviderRuntime {
       ready: live,
       reason: live
         ? `OpenAI 真实调用已启动 · ${config.model}；仅翻译按钮发送请求，结果须人工复核。`
-        : !operatorEnabled
-          ? '服务端真实调用开关或累计预算上限尚未放行，当前不会发送真实请求。'
-          : !present
-            ? '服务端凭据变量尚未设置；请通过安全入口配置，勿粘贴密钥到网页。'
-            : config.protocol !== 'openai-responses' || config.mode !== 'custom'
-              ? '请先保存 OpenAI 官方 Responses 设置；其它协议本阶段仅保留离线配置。'
-              : !findOpenAIModel(config.model)
-                ? '模型未列入已核对的定价目录，真实调用被阻止。'
-                : budget.overrun
-                  ? '预算或 token 预留出现超限，真实调用已阻止，请核对费用记录。'
-                  : '真实调用尚未启动；明确确认传输与累计费用后才可开启，开启本身不测试连接。',
+        : this.stopPersistenceFailed
+          ? '真实调用已在本进程关闭，但停止状态未能持久化；修复存储并重新明确启动前不会发送请求。'
+          : !operatorEnabled
+            ? '服务端真实调用开关或累计预算上限尚未放行，当前不会发送真实请求。'
+            : !present
+              ? '服务端凭据变量尚未设置；请通过安全入口配置，勿粘贴密钥到网页。'
+              : config.protocol !== 'openai-responses' || config.mode !== 'custom'
+                ? '请先保存 OpenAI 官方 Responses 设置；其它协议本阶段仅保留离线配置。'
+                : !findOpenAIModel(config.model)
+                  ? '模型未列入已核对的定价目录，真实调用被阻止。'
+                  : budget.overrun
+                    ? '预算或 token 预留出现超限，真实调用已阻止，请核对费用记录。'
+                    : '真实调用尚未启动；明确确认传输与累计费用后才可开启，开启本身不测试连接。',
       settingsRevision: revision,
       provider: config.protocol === 'openai-responses' ? 'openai-responses' : 'none',
       model: config.model,
@@ -165,29 +176,50 @@ export class LiveProviderRuntime {
       (body.maxOutputTokens as number) > model.maxOutputTokens
     )
       failure(400, 'INVALID_OUTPUT_LIMIT', '最大输出 token 必须为 256 至模型应用上限之间的整数。');
-    const key = config.credentialRef && this.environment[config.credentialRef]?.trim();
+    const key = config.credentialRef && this.environment[config.credentialRef];
     if (!key) failure(400, 'CREDENTIAL_MISSING', '服务端凭据变量尚未设置，不能启动真实调用。');
-    this.ledger.arm({ budgetMicros: body.budgetMicros as number, acknowledgeCosts: true });
-    this.outputTokens = body.maxOutputTokens as number;
-    this.active = createOpenAIAdapter(
+    if (
+      key.length > 1024 ||
+      /\s/u.test(key) ||
+      Array.from(key).some(
+        (character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+      )
+    )
+      failure(
+        400,
+        'CREDENTIAL_INVALID',
+        '服务端凭据格式无效，未启用真实调用；请通过安全入口检查。',
+      );
+    const candidate = createOpenAIAdapter(
       {
         apiKey: key,
         model: model.id,
-        maxOutputTokens: this.outputTokens,
+        maxOutputTokens: body.maxOutputTokens as number,
         enabled: true,
         timeoutMs: 30000,
       },
       { transport: this.transport, budget: this.ledger },
     );
+    if (!candidate.ready) failure(400, 'PROVIDER_NOT_READY', '服务配置尚不可用，未启用真实调用。');
+    if (this.stopPersistenceFailed) {
+      this.ledger.disarm();
+      this.stopPersistenceFailed = false;
+    }
+    this.ledger.arm({ budgetMicros: body.budgetMicros as number, acknowledgeCosts: true });
+    this.outputTokens = body.maxOutputTokens as number;
+    this.active = candidate;
     this.activeRevision = revision;
     this.selectedReal = true;
     return this.status();
   }
   stop(mock = false): LiveProviderStatus {
-    this.ledger.disarm();
+    // Local revocation must not depend on durable storage succeeding.
     this.active = null;
     this.activeRevision = -1;
     if (mock) this.selectedReal = false;
+    this.stopPersistenceFailed = true;
+    this.ledger.disarm();
+    this.stopPersistenceFailed = false;
     return this.status();
   }
   beforeSave(): void {
@@ -212,10 +244,20 @@ export function createLiveProviderRouter(
   });
   for (const path of ['/stop', '/mock'])
     router.post(path, (_req, res) => {
-      // Disarm first: no queued retry/paragraph can obtain another reservation.
-      const status = runtime.stop(path === '/mock');
-      for (const task of service.store.list())
-        if (task.status === 'running') service.cancel(task.id);
+      let status: LiveProviderStatus | undefined;
+      let failure: unknown;
+      try {
+        status = runtime.stop(path === '/mock');
+      } catch (error) {
+        failure = error;
+      }
+      // Abort every run even when the budget or a task write fails.
+      try {
+        service.cancelAll();
+      } catch (error) {
+        failure ??= error;
+      }
+      if (failure) throw failure;
       res.json(status);
     });
   router.use(

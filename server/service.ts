@@ -668,6 +668,20 @@ export class TaskService {
     task.status = 'cancelled';
     return this.store.save(task);
   }
+  cancelAll(): void {
+    const ids = [...this.runs.keys()];
+    // Abort transports first, before any read or write needed for UI status.
+    for (const run of this.runs.values()) run.controller.abort();
+    let failure: unknown;
+    for (const id of ids) {
+      try {
+        this.cancel(id);
+      } catch (error) {
+        failure ??= error;
+      }
+    }
+    if (failure) throw failure;
+  }
   private async callWithRetry(
     input: Parameters<TranslationAdapter['translate']>[0],
     signal: AbortSignal,

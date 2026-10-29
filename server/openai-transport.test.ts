@@ -293,6 +293,17 @@ describe('request/response limits, deadlines and cancellation', () => {
     expect(h.lookup).not.toHaveBeenCalled();
     expect(h.request).not.toHaveBeenCalled();
   });
+  it('same-tick cancellation prevents even the queued DNS lookup', async () => {
+    const h = harness();
+    const controller = new AbortController();
+    const pending = h.transport(input({ signal: controller.signal }));
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ code: 'CANCELLED' });
+    await turn();
+    expect(h.lookup).not.toHaveBeenCalled();
+    expect(h.request).not.toHaveBeenCalled();
+  });
+
   it('bounds a never-completing DNS lookup and ignores its late result', async () => {
     vi.useFakeTimers();
     const h = harness();

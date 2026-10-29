@@ -251,7 +251,11 @@ export function createOpenAIAdapter(
   const configured =
     config.enabled &&
     !!config.apiKey.trim() &&
-    !/[\r\n]/.test(config.apiKey) &&
+    config.apiKey.length <= 1024 &&
+    !/\s/u.test(config.apiKey) &&
+    !Array.from(config.apiKey).some(
+      (character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+    ) &&
     !!model &&
     Number.isSafeInteger(config.maxOutputTokens) &&
     config.maxOutputTokens >= 64 &&

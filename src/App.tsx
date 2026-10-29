@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MockScenario, ServiceConfig, Style, Task } from '../shared/types';
+import type { LiveProviderStatus } from '../shared/live-provider';
+import { professionalApi as boundedApi } from './professional-api';
 import { MAX_CHARACTERS, MAX_PARAGRAPHS } from '../shared/types';
 import { api } from './api';
 import { startPolling } from './polling';
@@ -35,6 +37,8 @@ const keyFor = (taskId: string, paragraphId: string) => `${taskId}:${paragraphId
 
 export default function App() {
   const [config, setConfig] = useState<ServiceConfig | null>(null);
+  const [liveStatus, setLiveStatus] = useState<LiveProviderStatus | null>(null);
+  const latestLiveStatus = useRef<LiveProviderStatus | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(taskFromUrl);
   const [task, setTask] = useState<Task | null>(null);
@@ -49,6 +53,8 @@ export default function App() {
   const [taskReadError, setTaskReadError] = useState('');
   const [notice, setNotice] = useState('');
   const [posting, setPosting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [pendingRunId, setPendingRunId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [docxBusy, setDocxBusy] = useState(false);
   const [importEpoch, setImportEpoch] = useState(0);
@@ -56,7 +62,42 @@ export default function App() {
   const [loading, setLoading] = useState(!!selectedId);
   const currentId = useRef(selectedId);
   const actionLock = useRef(false);
+  const actionGeneration = useRef(0);
+  const translationWork = useRef(false);
+  const translationController = useRef<AbortController | null>(null);
+  const cancelLock = useRef(false);
   currentId.current = selectedId;
+
+  const updateLiveStatus = useCallback((value: LiveProviderStatus | null) => {
+    latestLiveStatus.current = value;
+    setLiveStatus(value);
+  }, []);
+  const interruptTranslationWait = useCallback(() => {
+    if (!translationWork.current) return;
+    actionGeneration.current++;
+    translationController.current?.abort();
+    translationController.current = null;
+    translationWork.current = false;
+    actionLock.current = false;
+    setPendingRunId(null);
+    setPosting(false);
+    setCreating(false);
+  }, []);
+  const translationReady =
+    !!config?.ready &&
+    !!liveStatus &&
+    (config.mode === 'mock'
+      ? liveStatus.mode === 'mock'
+      : liveStatus.mode === 'live' && liveStatus.ready);
+  function readyNow() {
+    const current = latestConfig.current,
+      control = latestLiveStatus.current;
+    return (
+      !!current?.ready &&
+      !!control &&
+      (current.mode === 'mock' ? control.mode === 'mock' : control.mode === 'live' && control.ready)
+    );
+  }
 
   const refreshList = useCallback(async () => {
     setTasks(await api<Task[]>('/tasks'));
@@ -165,14 +206,18 @@ export default function App() {
     setError('');
     setNotice('');
   }
-  async function action(work: () => Promise<void>) {
+  async function action(work: (current: () => boolean) => Promise<void>, translates = false) {
     if (actionLock.current) return;
     actionLock.current = true;
+    const generation = ++actionGeneration.current;
+    const current = () => generation === actionGeneration.current;
+    translationWork.current = translates;
     setPosting(true);
     setError('');
     setNotice('');
     try {
-      await work();
+      await work(current);
+      if (!current()) return;
       // A successful mutation stays successful even if its follow-up list refresh fails.
       try {
         await refreshList();
@@ -184,10 +229,16 @@ export default function App() {
         }));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '操作失败，请重试。');
+      if (current()) setError(e instanceof Error ? e.message : '操作失败，请重试。');
     } finally {
-      actionLock.current = false;
-      setPosting(false);
+      if (current()) {
+        actionLock.current = false;
+        translationWork.current = false;
+        translationController.current = null;
+        setPendingRunId(null);
+        setPosting(false);
+        setCreating(false);
+      }
     }
   }
   const paragraphCount = input.trim() ? input.trim().split(/\n\s*\n/).length : 0;
@@ -195,10 +246,11 @@ export default function App() {
     input.length > (config?.maxCharacters ?? MAX_CHARACTERS) ||
     paragraphCount > (config?.maxParagraphs ?? MAX_PARAGRAPHS);
   function createTask() {
-    if (actionLock.current || docxBusy || !config?.ready || !input.trim() || overLimit) return;
+    if (actionLock.current || docxBusy || !readyNow() || !config || !input.trim() || overLimit)
+      return;
     const submitted = { text: input, style, scenario, mode: config.mode, project, context };
     setCreating(true);
-    void action(async () => {
+    void action(async (current) => {
       const created = await api<Task>('/tasks', {
         method: 'POST',
         body: JSON.stringify({
@@ -208,38 +260,55 @@ export default function App() {
           ...(submitted.context ? { context: submitted.context } : {}),
         }),
       });
-      if (created.mode !== submitted.mode || latestConfig.current?.mode !== submitted.mode) {
+      if (!current()) return;
+      if (
+        created.mode !== submitted.mode ||
+        latestConfig.current?.mode !== submitted.mode ||
+        !readyNow()
+      ) {
         setNotice('服务模式已变化，原文草稿已保留；已创建的任务可从列表打开，请确认模式后再继续。');
         return;
       }
       navigate(created.id);
       setTask(created);
       setInput((current) => (current === submitted.text ? '' : current));
+      const controller = new AbortController();
+      translationController.current = controller;
+      setPendingRunId(created.id);
       const started = await api<Task>(`/tasks/${created.id}/translate`, {
         method: 'POST',
         body: JSON.stringify({ scenario: submitted.scenario }),
+        signal: controller.signal,
       });
-      acceptTask(started);
-    }).finally(() => setCreating(false));
+      if (current()) acceptTask(started);
+    }, true);
   }
   function openImported(
     created: Task,
     submittedMode: 'mock' | 'real',
     submittedScenario: MockScenario,
   ) {
-    if (created.mode !== submittedMode || latestConfig.current?.mode !== submittedMode) {
+    if (
+      created.mode !== submittedMode ||
+      latestConfig.current?.mode !== submittedMode ||
+      !readyNow()
+    ) {
       setError('服务模式已变化，文档任务已保存，请从列表打开后确认。');
       return;
     }
-    void action(async () => {
+    void action(async (current) => {
       navigate(created.id);
       setTask(created);
+      const controller = new AbortController();
+      translationController.current = controller;
+      setPendingRunId(created.id);
       const started = await api<Task>(`/tasks/${created.id}/translate`, {
         method: 'POST',
         body: JSON.stringify({ scenario: submittedScenario }),
+        signal: controller.signal,
       });
-      acceptTask(started);
-    });
+      if (current()) acceptTask(started);
+    }, true);
   }
   function downloadDocx(mode: 'chinese' | 'bilingual') {
     if (!task?.document) return;
@@ -261,7 +330,7 @@ export default function App() {
     });
   }
   function translate(paragraphId?: string) {
-    if (!task) return;
+    if (!task || !readyNow()) return;
     const selected = paragraphId ? task.paragraphs.find((p) => p.id === paragraphId) : undefined;
     if (selected && drafts[keyFor(task.id, selected.id)]) {
       setError('请先保存本段修改，再选择重译。');
@@ -273,21 +342,35 @@ export default function App() {
     )
       return;
     const id = task.id;
-    void action(async () => {
+    void action(async (current) => {
+      const controller = new AbortController();
+      translationController.current = controller;
+      setPendingRunId(id);
       const updated = await api<Task>(`/tasks/${id}/translate`, {
         method: 'POST',
         body: JSON.stringify({ scenario, ...(paragraphId ? { paragraphIds: [paragraphId] } : {}) }),
+        signal: controller.signal,
       });
-      acceptTask(updated);
-    });
+      if (current()) acceptTask(updated);
+    }, true);
   }
-  function cancel() {
-    if (!task) return;
+  async function cancel() {
+    if (!task || cancelLock.current) return;
     const id = task.id;
-    void action(async () => {
-      const updated = await api<Task>(`/tasks/${id}/cancel`, { method: 'POST', body: '{}' });
+    cancelLock.current = true;
+    setCancelling(true);
+    interruptTranslationWait();
+    setError('');
+    try {
+      const updated = await boundedApi<Task>(`/tasks/${id}/cancel`, { method: 'POST', body: '{}' });
       acceptTask(updated);
-    });
+      await refreshList();
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : '取消请求未成功，请重新读取任务确认。');
+    } finally {
+      cancelLock.current = false;
+      setCancelling(false);
+    }
   }
   function save(paragraphId: string) {
     if (!task) return;
@@ -418,7 +501,11 @@ export default function App() {
           </span>
           <span className={`mode-pill ${config?.mode === 'real' ? 'real' : ''}`}>
             <span />
-            {config ? (config.mode === 'mock' ? '模拟模式' : '真实服务') : '检查服务状态中'}
+            {config && liveStatus
+              ? config.mode === 'mock'
+                ? '模拟模式'
+                : '真实服务'
+              : '检查服务状态中'}
           </span>
         </header>
         <main>
@@ -524,8 +611,8 @@ export default function App() {
                   <button disabled={!!currentDirty} onClick={exportFile}>
                     导出文本
                   </button>
-                  {task.status === 'running' ? (
-                    <button className="danger" disabled={posting} onClick={cancel}>
+                  {task.status === 'running' || pendingRunId === task.id ? (
+                    <button className="danger" disabled={cancelling} onClick={() => void cancel()}>
                       取消翻译
                     </button>
                   ) : (
@@ -533,7 +620,7 @@ export default function App() {
                       className="primary"
                       disabled={
                         posting ||
-                        !config?.ready ||
+                        !translationReady ||
                         !task.paragraphs.some((p) => p.status !== 'done' && !p.edited)
                       }
                       onClick={() => translate()}
@@ -620,7 +707,7 @@ export default function App() {
                             保存修改
                           </button>
                           <button
-                            disabled={posting || task.status === 'running' || !config?.ready}
+                            disabled={posting || task.status === 'running' || !translationReady}
                             onClick={() => translate(p.id)}
                           >
                             重译本段
@@ -772,7 +859,9 @@ export default function App() {
                   </div>
                   <button
                     className="primary create"
-                    disabled={!input.trim() || overLimit || posting || docxBusy || !config?.ready}
+                    disabled={
+                      !input.trim() || overLimit || posting || docxBusy || !translationReady
+                    }
                     onClick={createTask}
                   >
                     {creating ? '正在创建…' : '创建并翻译'} <span aria-hidden="true">↗</span>
@@ -786,7 +875,7 @@ export default function App() {
                 context={context}
                 scenario={scenario}
                 mode={config?.mode ?? null}
-                ready={!!config?.ready}
+                ready={translationReady}
                 busy={posting || creating}
                 onBusyChange={setDocxBusy}
                 onCreated={openImported}
@@ -814,7 +903,11 @@ export default function App() {
           )}
           <TerminologyManager disabled={posting || creating || docxBusy} />
           <ProviderSettings disabled={posting || creating || docxBusy} />
-          <LiveProvider disabled={posting || creating || docxBusy} />
+          <LiveProvider
+            disabled={posting || creating || docxBusy}
+            onStatusChange={updateLiveStatus}
+            onEmergencyStop={interruptTranslationWait}
+          />
           {config?.mode === 'mock' && (
             <details className="dev-panel">
               <summary>模拟测试设置</summary>

@@ -1,0 +1,617 @@
+IR Translation Workbench PR3 audit rework
+Date2026-10-29
+Base b969a77ba3d140d8d73f41e6c65ca3b8ac8216f6
+Branchfeat/openai-provider independentworktree /workspace/ir-translation-workbench-pr3-fix
+ProxyWIP is isolatedin feat/cloud-proxy-transport originalworktree with /tmp patch+tar backup; no proxycode/dependency changes includedhere. No credentials or realprovider operations, no merge/deploy.
+
+COMMAND: Backend red checkpoint (disarm-only failure injected)
+EXIT CODE: 1
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench-pr3-fix
+
+ ❯ server/live-provider-rework.test.ts (13 tests | 9 failed) 360ms
+   ❯ live stop persistence failures fail closed immediately (3)
+     × /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist 150ms
+     × /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist 45ms
+   ❯ controller and provider readiness remain consistent (10)
+     × rejects unusable synthetic credential case 0 without arming a budget 15ms
+     × rejects unusable synthetic credential case 1 without arming a budget 15ms
+     × rejects unusable synthetic credential case 2 without arming a budget 16ms
+     × rejects unusable synthetic credential case 3 without arming a budget 15ms
+     × rejects unusable synthetic credential case 4 without arming a budget 11ms
+     × rejects unusable synthetic credential case 5 without arming a budget 12ms
+     × rejects unusable synthetic credential case 6 without arming a budget 15ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ server/live-provider-rework.test.ts:162:36
+    160|         await request(app).post(`/api/live-provider${path}`).send({}).…
+    161|         const stopped = await status();
+    162|         expect.soft(stopped.ready).toBe(false);
+       |                                    ^
+    163|         expect.soft(stopped.mode).toBe(path === '/mock' ? 'mock' : 're…
+    164|         expect.soft(stopped.budget.armed).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected 'live' to be 'real-disabled' // Object.is equality
+
+Expected: "real-disabled"
+Received: "live"
+
+ ❯ server/live-provider-rework.test.ts:163:35
+    161|         const stopped = await status();
+    162|         expect.soft(stopped.ready).toBe(false);
+    163|         expect.soft(stopped.mode).toBe(path === '/mock' ? 'mock' : 're…
+       |                                   ^
+    164|         expect.soft(stopped.budget.armed).toBe(false);
+    165|         expect
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ server/live-provider-rework.test.ts:164:43
+    162|         expect.soft(stopped.ready).toBe(false);
+    163|         expect.soft(stopped.mode).toBe(path === '/mock' ? 'mock' : 're…
+    164|         expect.soft(stopped.budget.armed).toBe(false);
+       |                                           ^
+    165|         expect
+    166|           .soft(() =>
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected [Function] to throw an error
+ ❯ server/live-provider-rework.test.ts:173:12
+    171|             }),
+    172|           )
+    173|           .toThrow();
+       |            ^
+    174|         expect.soft(first.signal.aborted).toBe(true);
+    175|         expect.soft(service.get(task.id).status).toBe('cancelled');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ server/live-provider-rework.test.ts:174:43
+    172|           )
+    173|           .toThrow();
+    174|         expect.soft(first.signal.aborted).toBe(true);
+       |                                           ^
+    175|         expect.soft(service.get(task.id).status).toBe('cancelled');
+    176|         // A persistence problem must not permit the next paragraph af…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected 'running' to be 'cancelled' // Object.is equality
+
+Expected: "cancelled"
+Received: "running"
+
+ ❯ server/live-provider-rework.test.ts:175:50
+    173|           .toThrow();
+    174|         expect.soft(first.signal.aborted).toBe(true);
+    175|         expect.soft(service.get(task.id).status).toBe('cancelled');
+       |                                                  ^
+    176|         // A persistence problem must not permit the next paragraph af…
+    177|         // successful-shaped response returns from an uncooperative tr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected "vi.fn()" to be called 1 times, but got 2 times
+ ❯ server/live-provider-rework.test.ts:180:32
+    178|         release.resolve();
+    179|         await service.idle(task.id);
+    180|         expect.soft(transport).toHaveBeenCalledTimes(1);
+       |                                ^
+    181|         expect.soft(service.get(task.id).paragraphs.every((p) => p.tra…
+    182|         expect.soft(service.get(task.id).status).toBe('cancelled');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ server/live-provider-rework.test.ts:181:89
+    179|         await service.idle(task.id);
+    180|         expect.soft(transport).toHaveBeenCalledTimes(1);
+    181|         expect.soft(service.get(task.id).paragraphs.every((p) => p.tra…
+       |                                                                                         ^
+    182|         expect.soft(service.get(task.id).status).toBe('cancelled');
+    183|         expect.soft((await status()).ready).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected 'completed' to be 'cancelled' // Object.is equality
+
+Expected: "cancelled"
+Received: "completed"
+
+ ❯ server/live-provider-rework.test.ts:182:50
+    180|         expect.soft(transport).toHaveBeenCalledTimes(1);
+    181|         expect.soft(service.get(task.id).paragraphs.every((p) => p.tra…
+    182|         expect.soft(service.get(task.id).status).toBe('cancelled');
+       |                                                  ^
+    183|         expect.soft((await status()).ready).toBe(false);
+    184|         await start().expect(503);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ server/live-provider-rework.test.ts:183:45
+    181|         expect.soft(service.get(task.id).paragraphs.every((p) => p.tra…
+    182|         expect.soft(service.get(task.id).status).toBe('cancelled');
+    183|         expect.soft((await status()).ready).toBe(false);
+       |                                             ^
+    184|         await start().expect(503);
+    185|         expect.soft(transport).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /stop cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+Error: expected 503 "Service Unavailable", got 409 "Conflict"
+ ❯ server/live-provider-rework.test.ts:184:23
+    182|         expect.soft(service.get(task.id).status).toBe('cancelled');
+    183|         expect.soft((await status()).ready).toBe(false);
+    184|         await start().expect(503);
+       |                       ^
+    185|         expect.soft(transport).toHaveBeenCalledTimes(1);
+    186|         failBudgetWrites = false;
+ ❯ Test._assertStatus node_modules/supertest/lib/test.js:404:14
+ ❯ node_modules/supertest/lib/test.js:460:13
+ ❯ Test._assertFunction node_modules/supertest/lib/test.js:437:13
+ ❯ Test.assert node_modules/supertest/lib/test.js:302:23
+ ❯ localAssert node_modules/supertest/lib/test.js:220:38
+ ❯ Server.<anonymous> node_modules/supertest/lib/test.js:227:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > live stop persistence failures fail closed immediately > /mock cancels in-flight work and blocks the next paragraph even when disarm cannot persist
+AssertionError: expected 'live' to be 'mock' // Object.is equality
+
+Expected: "mock"
+Received: "live"
+
+ ❯ server/live-provider-rework.test.ts:163:35
+    161|         const stopped = await status();
+    162|         expect.soft(stopped.ready).toBe(false);
+    163|         expect.soft(stopped.mode).toBe(path === '/mock' ? 'mock' : 're…
+       |                                   ^
+    164|         expect.soft(stopped.budget.armed).toBe(false);
+    165|         expect
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/29]⎯
+
+ FAIL  server/live-provider-rework.test.ts > controller and provider readiness remain consistent > rejects unusable synthetic credential case 0 without arming a budget
+ FAIL  server/live-provider-rework.test.ts > controller and provider readiness remain consistent > rejects unusable synthetic credential case 1 without arming a budget
+ FAIL  server/live-provider-rework.test.ts > controller and provider readiness remain consistent > rejects unusable synthetic credential case 2 without arming a budget
+ FAIL  server/live-provider-rework.test.ts > controller and provider readiness remain consistent > rejects unusable synthetic credential case 3 without arming a budget
+ FAIL  server/live-provider-rework.test.ts > controller and provider readiness remain consistent > rejects unusable synthetic credential case 4 without arming a budget
+ FAIL  server/live-provider-rework.test.ts > controller and provider readiness remain consistent > rejects unusable synthetic credential case 5 without arming a budget
+ FAIL  server/live-provider-rework.test.ts > controller and provider readiness remain consistent > rejects unusable synthetic credential case 6 without arming a budget
+AssertionError: expected 200 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 200
+
+ ❯ server/live-provider-rework.test.ts:262:31
+    260|       app = createApp(service, undefined, runtime);
+    261|       const response = await start();
+    262|       expect(response.status).toBe(400);
+       |                               ^
+    263|       expect((await status()).ready).toBe(false);
+    264|       expect((await status()).mode).not.toBe('live');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/29]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 failed | 4 passed (13)
+   Start at  04:24:32
+   Duration  1.48s (transform 41%, tests 29%, import 28%, worker 2%)
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: same-tick DNS red checkpoint
+EXIT CODE: 1
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench-pr3-fix
+
+ ❯ server/openai-transport.test.ts (85 tests | 1 failed | 84 skipped) 31ms
+   ❯ request/response limits, deadlines and cancellation (23)
+     × same-tick cancellation prevents even the queued DNS lookup 27ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/openai-transport.test.ts > request/response limits, deadlines and cancellation > same-tick cancellation prevents even the queued DNS lookup
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      "api.openai.com",
+    ]
+
+
+Number of calls: 1
+
+ ❯ server/openai-transport.test.ts:303:26
+    301|     await expect(pending).rejects.toMatchObject({ code: 'CANCELLED' });
+    302|     await turn();
+    303|     expect(h.lookup).not.toHaveBeenCalled();
+       |                          ^
+    304|     expect(h.request).not.toHaveBeenCalled();
+    305|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 84 skipped (85)
+   Start at  04:22:52
+   Duration  801ms (transform 63%, import 24%, tests 9%, worker 4%)
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: vitest backend rework + budget + adapter + transport green270
+EXIT CODE: 0
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench-pr3-fix
+
+
+ Test Files  4 passed (4)
+      Tests  270 passed (270)
+   Start at  04:26:12
+   Duration  2.31s (tests 49%, import 30%, transform 20%, worker 2%)
+
+    Isolate  4 workers spawned · ~153ms startup each (spawn + environment, per file)
+             at least ~459ms faster with isolate: false — reuses workers across files instead of one per file
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: targeted new6Chromium
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test tests/openai-rework.spec.ts --reporter=list,json,html
+
+[WebServer] (node:10315) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:10328) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:10417) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/openai-rework.spec.ts:112:1 › cancel remains effective while an actual mock translate 202 response is held, and its late snapshot cannot revive the run (3.0s)
+  ✓  2 [chromium] › tests/openai-rework.spec.ts:174:3 › synthetic stop 200 remains available during a held translate 202 and a late response never reactivates the task (2.0s)
+  ✓  3 [chromium] › tests/openai-rework.spec.ts:174:3 › synthetic mock 200 remains available during a held translate 202 and a late response never reactivates the task (2.1s)
+  ✓  4 [chromium] › tests/openai-rework.spec.ts:174:3 › synthetic stop 503 remains available during a held translate 202 and a late response never reactivates the task (2.1s)
+  ✓  5 [chromium] › tests/openai-rework.spec.ts:275:1 › mount and reload read live status while the panel stays closed, with unknown state blocking real translation until synchronized (2.5s)
+  ✓  6 [chromium] › tests/openai-rework.spec.ts:331:1 › a failed initial live status read keeps billable controls disabled and emergency stop available until an explicit successful refresh (1.4s)
+
+  6 passed (18.4s)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm test
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test
+> vitest run && npm run test:public
+
+
+ RUN  v5.0.5 /workspace/ir-translation-workbench-pr3-fix
+
+
+ Test Files  18 passed (18)
+      Tests  898 passed (898)
+   Start at  04:28:30
+   Duration  30.68s (tests 88%, import 9%, transform 3%)
+
+    Isolate  18 workers spawned · ~169ms startup each (spawn + environment, per file)
+             at least ~2.87s faster with isolate: false — reuses workers across files instead of one per file
+
+
+> ir-translation-workbench@0.1.0 test:public
+> node --test scripts/check-public.test.mjs
+
+✔ empty staged diff still scans HEAD, index and working files (136.282439ms)
+✔ rejects synthetic credential in tracked worktree when staging is empty (136.913048ms)
+✔ checks complete staged snapshots even after worktree cleanup (124.39397ms)
+✔ checks nonignored untracked intended files and runtime artifacts (117.894854ms)
+✔ base range scans intermediate committed blobs removed before HEAD (314.240434ms)
+✔ client build still requires separation from provider config and credentials (135.062467ms)
+✔ client build rejects OpenAI credential and operator variable references (242.867948ms)
+✔ missing build or invalid base never reports success (194.911216ms)
+✔ refuses success when the repository scan scope is empty (111.691258ms)
+✔ empty dist never reports a successful client build scan (128.485591ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1748.234155
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run lint
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 lint
+> eslint .
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run typecheck
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 typecheck
+> tsc --noEmit
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run format:check
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run build
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 45 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.46 kB │ gzip:  0.32 kB
+dist/assets/index-6RIIIea7.css   23.81 kB │ gzip:  5.83 kB
+dist/assets/index-DYsxm3EM.js   290.61 kB │ gzip: 90.54 kB
+✓ built in 5.59s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: PLAYWRIGHT_HTML_REPORT=/tmp/ir-pr3-rework-full-browser-report PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/ir-pr3-rework-full-browser.json npm run test:e2e -- --reporter=list,json,html
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 test:e2e
+> playwright test --reporter=list,json,html
+
+[WebServer] (node:11549) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:11562) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 61 tests using 1 worker
+
+(node:11637) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/docx.spec.ts:187:1 › supported DOCX completes preflight, durable review and actual Chinese/bilingual downloads (6.8s)
+  ✓   2 [chromium] › tests/docx.spec.ts:303:1 › formatting warnings require explicit acknowledgment and can be cancelled (1.5s)
+  ✓   3 [chromium] › tests/docx.spec.ts:320:3 › unsupported drawing is explicitly blocked before document task creation (1.5s)
+  ✓   4 [chromium] › tests/docx.spec.ts:320:3 › unsupported merged is explicitly blocked before document task creation (1.5s)
+  ✓   5 [chromium] › tests/docx.spec.ts:338:1 › fake extension and corrupt DOCX cannot create document tasks (1.4s)
+  ✓   6 [chromium] › tests/docx.spec.ts:364:1 › oversized DOCX is rejected by the browser and the raw server boundary (2.5s)
+  ✓   7 [chromium] › tests/docx.spec.ts:387:1 › repeated upload clicks send one request and cancellation ignores the late preflight result (1.9s)
+  ✓   8 [chromium] › tests/docx.spec.ts:435:1 › switching tasks aborts pending preflight and does not restore its late preview (2.9s)
+  ✓   9 [chromium] › tests/docx.spec.ts:475:1 › document translation cancellation keeps export disabled until remaining paragraphs recover (9.4s)
+  ✓  10 [chromium] › tests/docx.spec.ts:498:1 › partial document failure can retry without replacing another manually saved paragraph (8.3s)
+  ✓  11 [chromium] › tests/docx.spec.ts:522:1 › mode change during document task creation leaves a draft in the list without auto-translation (3.9s)
+  ✓  12 [chromium] › tests/openai-rework.spec.ts:112:1 › cancel remains effective while an actual mock translate 202 response is held, and its late snapshot cannot revive the run (1.9s)
+  ✓  13 [chromium] › tests/openai-rework.spec.ts:174:3 › synthetic stop 200 remains available during a held translate 202 and a late response never reactivates the task (3.2s)
+  ✓  14 [chromium] › tests/openai-rework.spec.ts:174:3 › synthetic mock 200 remains available during a held translate 202 and a late response never reactivates the task (1.9s)
+  ✓  15 [chromium] › tests/openai-rework.spec.ts:174:3 › synthetic stop 503 remains available during a held translate 202 and a late response never reactivates the task (1.8s)
+  ✓  16 [chromium] › tests/openai-rework.spec.ts:275:1 › mount and reload read live status while the panel stays closed, with unknown state blocking real translation until synchronized (2.3s)
+  ✓  17 [chromium] › tests/openai-rework.spec.ts:331:1 › a failed initial live status read keeps billable controls disabled and emergency stop available until an explicit successful refresh (1.5s)
+  ✓  18 [chromium] › tests/openai.spec.ts:65:1 › OpenAI model settings save without activating a provider and the default real-call gate stays closed (2.8s)
+  ✓  19 [chromium] › tests/openai.spec.ts:157:1 › synthetic live control requires both consents and sends one bounded start after repeated clicks (1.7s)
+  ✓  20 [chromium] › tests/openai.spec.ts:222:1 › synthetic start failure preserves the explicit budget draft and a retry is user initiated (1.8s)
+  ✓  21 [chromium] › tests/openai.spec.ts:250:1 › synthetic stop and mock transitions retain cumulative spent and unknown reservation totals (1.6s)
+  ✓  22 [chromium] › tests/openai.spec.ts:315:1 › synthetic live control rejects invalid cumulative amounts and output limits before a start request (2.7s)
+  ✓  23 [chromium] › tests/professional.spec.ts:302:1 › terminology manager adds, edits, retains English and disables a project-scoped term (15.2s)
+  ✓  24 [chromium] › tests/professional.spec.ts:383:1 › manual numeric review shows exact source and translation locations and confirmation invalidates after editing (5.2s)
+  ✓  25 [chromium] › tests/professional.spec.ts:474:1 › project scope overrides higher-priority global candidates without silently rewriting saved translation (2.4s)
+  ✓  26 [chromium] › tests/professional.spec.ts:504:1 › equal-priority conflicting project choices are visible and prevent automatic translation (1.7s)
+  ✓  27 [chromium] › tests/professional.spec.ts:532:1 › library changes leave historical tasks immutable and a confirmed snapshot reapply preserves every manual edit (3.2s)
+  ✓  28 [chromium] › tests/professional.spec.ts:640:1 › saving a paragraph makes an existing preview stale and prevents its application (2.0s)
+  ✓  29 [chromium] › tests/professional.spec.ts:662:1 › a library revision changed after preview is rejected visibly and a fresh preview can recover (2.2s)
+  ✓  30 [chromium] › tests/professional.spec.ts:687:1 › preview and apply failures retain task state and allow explicit retries (2.1s)
+  ✓  31 [chromium] › tests/professional.spec.ts:729:1 › repeated preview clicks send one request and cancellation releases the form without reviving a late result (2.1s)
+  ✓  32 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late success (3.0s)
+  ✓  33 [chromium] › tests/professional.spec.ts:778:3 › switching tasks discards a pending terminology preview and its late failure (2.4s)
+  ✓  34 [chromium] › tests/professional.spec.ts:842:1 › DOCX project context and table findings persist while downloads contain only the latest saved translation (5.4s)
+  ✓  35 [chromium] › tests/professional.spec.ts:919:1 › offline provider settings persist only nonsecret fields and never enable or contact a provider (2.6s)
+  ✓  36 [chromium] › tests/professional.spec.ts:1015:1 › a stale offline settings save cannot overwrite a newer record and reload allows a safe retry (1.7s)
+  ✓  37 [chromium] › tests/professional.spec.ts:1070:1 › collapsing and reopening offline settings preserves an unsaved draft without rereading the server (1.8s)
+  ✓  38 [chromium] › tests/professional.spec.ts:1117:1 › a pending offline save survives collapse and reopen without an older read rolling back the saved revision (2.0s)
+  ✓  39 [chromium] › tests/workbench.spec.ts:58:1 › input bounds, explicit simulation label, save/reopen and text export (4.7s)
+  ✓  40 [chromium] › tests/workbench.spec.ts:120:1 › local retranslation preserves other saved edits and edits made while response is pending (6.5s)
+  ✓  41 [chromium] › tests/workbench.spec.ts:146:1 › duplicate translate rejected, cancel survives navigation and remaining paragraphs can retry (4.3s)
+  ✓  42 [chromium] › tests/workbench.spec.ts:171:1 › newer typing during a pending save remains editable and saves with the rebased revision (4.0s)
+  ✓  43 [chromium] › tests/workbench.spec.ts:213:1 › a model response arriving before save requires acknowledgment before replacing the newer result (5.5s)
+  ✓  44 [chromium] › tests/workbench.spec.ts:245:1 › a delayed create freezes the submitted snapshot and ignores repeated clicks (2.3s)
+  ✓  45 [chromium] › tests/workbench.spec.ts:307:1 › a delayed failed create retains the original input and unlocks exactly one retry (2.3s)
+  ✓  46 [chromium] › tests/workbench.spec.ts:373:1 › a service mode change during create retains the original draft and does not auto-translate (2.9s)
+  ✓  47 [chromium] › tests/workbench.spec.ts:431:1 › a temporary config read failure is visible and clears after recovery without a reload (2.8s)
+  ✓  48 [chromium] › tests/workbench.spec.ts:455:1 › config recovery clears its own error while retaining a newer action failure (4.2s)
+  ✓  49 [chromium] › tests/workbench.spec.ts:491:1 › a successful save keeps its notice while a list-read error appears and then clears after recovery (4.7s)
+  ✓  50 [chromium] › tests/workbench.spec.ts:546:1 › slow startup config responses longer than the poll interval are accepted without overlapping requests (7.1s)
+  ✓  51 [chromium] › tests/workbench.spec.ts:577:1 › a hanging config request times out, aborts transport, then recovers on the next serial attempt (7.9s)
+  ✓  52 [chromium] › tests/workbench.spec.ts:608:1 › the config deadline also aborts a hanging response body and closes the streaming connection (7.6s)
+  ✓  53 [chromium] › tests/workbench.spec.ts:680:1 › consecutive config 503 responses are shown in order before a later success clears the error (4.5s)
+  ✓  54 [chromium] › tests/workbench.spec.ts:700:3 › switching tasks aborts a pending old detail read and ignores its late success (2.6s)
+  ✓  55 [chromium] › tests/workbench.spec.ts:700:3 › switching tasks aborts a pending old detail read and ignores its late failure (2.4s)
+  ✓  56 [chromium] › tests/workbench.spec.ts:756:1 › reload and full document navigation close pending config streams without accumulating requests (9.3s)
+  ✓  57 [chromium] › tests/workbench.spec.ts:835:3 › mock timeout: finite failure, visible state and recovery (11.1s)
+  ✓  58 [chromium] › tests/workbench.spec.ts:835:3 › mock rate-limit: finite failure, visible state and recovery (5.2s)
+  ✓  59 [chromium] › tests/workbench.spec.ts:835:3 › mock server-error: finite failure, visible state and recovery (4.9s)
+  ✓  60 [chromium] › tests/workbench.spec.ts:835:3 › mock malformed: finite failure, visible state and recovery (4.0s)
+  ✓  61 [chromium] › tests/workbench.spec.ts:835:3 › mock partial: finite failure, visible state and recovery (4.6s)
+
+  61 passed (4.0m)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+Independent read-only patchreview: localledger disarm beforeIO, runtimeactive revoked, abortallruns beforetaskstatusIO, constructor safeonpersistedarmed/disarmfailure, candidate.readybeforearm all match targetedtests. Refinedred stopped only disarm writes, allowing usage/reserve writes: originalbug actually sentsecondrequest, not hiddenby generalstoragefailure.
+
+All old55browser cases unchanged, new6passed; full898unit+10publicthenfull61browser serially,noheavyZIPcontention. Existing15secondunitdeadline unchanged. No dependency/lockchanges in PR3fix, no repeatednpmci/audit. Generatedbrowserdata/SQLite/reports remainignored. TwoexistingOpenAI UI screenshots regeneratedfromfinal61; no APIqualityproof implied.
+
+Public-content and finalformat/whitespace checks follow; scan all currentfiles+completeindex+history+nonemptyclientbuild. No temporarypatch/tar or generatedprivatekeys committed.
+
+COMMAND: npm run format:check (final)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run check:public -- --base a44ecb2 (complete worktree)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD b969a77ba3d140d8d73f41e6c65ca3b8ac8216f6; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..b969a77ba3d140d8d73f41e6c65ca3b8ac8216f6.
+File snapshots: HEAD=125, index=125, worktree=129, history=305 across 9 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: npm run check:public -- --base a44ecb2 (complete staged snapshots)
+EXIT CODE: 0
+
+> ir-translation-workbench@0.1.0 check:public
+> node scripts/check-public.mjs --base a44ecb2
+
+Reviewed HEAD b969a77ba3d140d8d73f41e6c65ca3b8ac8216f6; commit range a44ecb2c272d605a03d2455028286e4b6c0c0f94..b969a77ba3d140d8d73f41e6c65ca3b8ac8216f6.
+File snapshots: HEAD=125, index=129, worktree=129, history=305 across 9 commits; client build=3.
+PASS: reviewed snapshots contain no matched known credential patterns/runtime artifacts; client build contains no matched server provider configuration. Manual sensitive-data review remains required.
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+COMMAND: git diff --cached --check
+EXIT CODE: 0
+No whitespace issues.

@@ -183,7 +183,10 @@ export function createOpenAITransport(
         return;
       }
       void Promise.resolve()
-        .then(() => lookup(HOSTNAME))
+        .then(() => {
+          if (settled || input.signal.aborted) return null;
+          return lookup(HOSTNAME);
+        })
         .then((addresses) => {
           if (settled) return;
           if (

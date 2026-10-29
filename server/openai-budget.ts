@@ -152,6 +152,7 @@ export function parseUsdToMicros(value: unknown): number {
 
 export class OpenAIBudgetLedger {
   private readonly operatorCapMicros: number;
+  private locallyDisarmed = false;
   private readonly prices = new Map<string, BudgetModelPrice>();
 
   constructor(
@@ -266,7 +267,7 @@ export class OpenAIBudgetLedger {
       );
     return {
       initialized: !!ledger,
-      armed: !!ledger?.armed && this.operatorCapMicros > 0 && !overrun,
+      armed: !this.locallyDisarmed && !!ledger?.armed && this.operatorCapMicros > 0 && !overrun,
       budgetMicros: ledger?.budgetMicros ?? 0,
       spentMicros,
       reservedMicros,
@@ -309,11 +310,15 @@ export class OpenAIBudgetLedger {
       entries: [],
     };
     ledger.armed = true;
+    this.locallyDisarmed = true;
     this.write(ledger);
+    this.locallyDisarmed = false;
     return this.summarize(ledger);
   }
 
   disarm(): BudgetSummary {
+    // Revoke permission in memory before any storage operation can fail.
+    this.locallyDisarmed = true;
     const ledger = this.read();
     if (ledger) {
       ledger.armed = false;
@@ -328,7 +333,7 @@ export class OpenAIBudgetLedger {
     maxOutputTokens: number;
   }): BudgetReservation {
     const ledger = this.read();
-    if (!ledger || !ledger.armed || this.operatorCapMicros === 0) {
+    if (this.locallyDisarmed || !ledger || !ledger.armed || this.operatorCapMicros === 0) {
       throw new BudgetError('BUDGET_NOT_ARMED', 409, '请先确认并显式启用本轮累计预算。');
     }
     const price = this.prices.get(input.model);

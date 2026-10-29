@@ -2,6 +2,8 @@
 
 日期：2026-10-29。独立分支 `feat/openai-provider` 基于中性命名 PR #2 的 `dc0fc9c5469b9bceb3e0f2a11aaac5d6943a9d49`。PR #2 尚待合并授权；本阶段使用 stacked Draft PR，以其分支为 base，不合并 main、不部署。本轮未修改依赖、锁文件或既有 50 项浏览器用例；没有配置、读取或传输真实凭据，没有真实供应商调用。
 
+本页是首轮执行记录，并非独立验收通过结论。后续审查复现的遗漏及修复证据见 [PR3 独立验收返工](openai-rework-verification.md)。
+
 ## 行为与安全门禁
 
 生产服务始终从 mock 启动。非敏感服务配置新增官方 Responses 与有界模型目录；自定义 OpenAI-compatible 设置保留离线，不能借语法合法的 URL 发请求。官方传输使用固定 `api.openai.com:443/v1/responses`，验证所有 DNS 结果为允许的公网单播地址，每次连接固定已验证地址并保留官方 TLS/SNI 检查，无连接复用、重定向或自定义域名回退。DNS/响应头/正文都有取消和资源限额。
