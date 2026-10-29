@@ -4,6 +4,7 @@ import {
   type ProviderSettingsConfig,
   type ProviderSettingsSummary,
 } from '../shared/provider-settings';
+import { OPENAI_DEFAULT_MODEL, OPENAI_MODELS, findOpenAIModel } from '../shared/openai-models';
 import { professionalApi as api } from './professional-api';
 import './provider-settings.css';
 
@@ -150,7 +151,7 @@ export default function ProviderSettings({ disabled = false }: { disabled?: bool
   return (
     <details className="provider-settings" onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>
-        翻译服务设置 <span>离线配置 · 未启用真实调用</span>
+        翻译服务设置 <span>仅保存配置 · 调用另行控制</span>
       </summary>
       <div className="provider-settings-body">
         <div className="provider-settings-explainer">
@@ -167,7 +168,10 @@ export default function ProviderSettings({ disabled = false }: { disabled?: bool
                 ? '服务端凭据变量已存在（未验证）'
                 : '服务端凭据变量未设置'}
             </span>
-            <small>实际调用关闭 · 连通性测试不可用 · 设置版本 {saved.revision}</small>
+            <small>
+              读取时真实调用{saved.realCallsEnabled ? '已启用' : '关闭'} · 本页不测试连接 · 设置版本{' '}
+              {saved.revision}
+            </small>
           </div>
         )}
         {loading && <p role="status">正在读取离线设置…</p>}
@@ -216,12 +220,22 @@ export default function ProviderSettings({ disabled = false }: { disabled?: bool
                 aria-label="服务协议"
                 value={form.protocol}
                 disabled={busy}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const protocol = event.target.value as ProviderSettingsConfig['protocol'];
                   setForm((previous) => ({
                     ...previous,
-                    protocol: event.target.value as ProviderSettingsConfig['protocol'],
-                  }))
-                }
+                    protocol,
+                    ...(protocol === 'openai-responses'
+                      ? {
+                          baseUrl: 'https://api.openai.com/v1',
+                          model: findOpenAIModel(previous.model)
+                            ? previous.model
+                            : OPENAI_DEFAULT_MODEL,
+                          credentialRef: saved?.recommendedCredentialRef || previous.credentialRef,
+                        }
+                      : {}),
+                  }));
+                }}
               >
                 {PROVIDER_PROTOCOL_OPTIONS.map((option) => (
                   <option key={option.id} value={option.id} disabled={!option.available}>
@@ -239,7 +253,7 @@ export default function ProviderSettings({ disabled = false }: { disabled?: bool
                 spellCheck={false}
                 value={form.baseUrl}
                 maxLength={2048}
-                disabled={busy}
+                disabled={busy || form.protocol === 'openai-responses'}
                 placeholder="https://api.example.com/v1"
                 onChange={(event) =>
                   setForm((previous) => ({ ...previous, baseUrl: event.target.value }))
@@ -250,6 +264,7 @@ export default function ProviderSettings({ disabled = false }: { disabled?: bool
               模型标识
               <input
                 aria-label="模型标识"
+                list={form.protocol === 'openai-responses' ? 'supported-openai-models' : undefined}
                 autoComplete="off"
                 spellCheck={false}
                 value={form.model}
@@ -260,6 +275,15 @@ export default function ProviderSettings({ disabled = false }: { disabled?: bool
                   setForm((previous) => ({ ...previous, model: event.target.value }))
                 }
               />
+              {form.protocol === 'openai-responses' && (
+                <datalist id="supported-openai-models">
+                  {OPENAI_MODELS.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.label}
+                    </option>
+                  ))}
+                </datalist>
+              )}
             </label>
             <label>
               服务端凭据变量引用
@@ -278,9 +302,21 @@ export default function ProviderSettings({ disabled = false }: { disabled?: bool
             </label>
           </div>
           <p className="provider-settings-help">
-            凭据引用仅允许服务端约定的变量名。请在服务端环境变量中配置值，勿把密钥粘贴到任何表单。地址仅进行语法检查，尚未解析
-            DNS 或验证公网连通性。
+            凭据引用仅允许服务端约定的变量名。请在服务端安全配置值，勿把密钥粘贴到任何表单。保存设置不解析
+            DNS、不测试连接，也不会自动启用真实调用。
           </p>
+          {form.protocol === 'openai-responses' ? (
+            <p className="provider-settings-help">
+              官方 OpenAI Responses 只允许上述固定地址；实际连接另行执行 DNS、目标地址固定和 TLS
+              校验并拒绝重定向。模型建议来自 2026-10-29
+              官方目录快照，账户权限和翻译质量均未实测；未知或无法定价的模型不能启用真实调用。请从模型建议中选择，保存后到“真实调用控制”刷新状态。
+            </p>
+          ) : (
+            <p className="provider-settings-help">
+              自定义兼容地址仅作离线配置与协议扩展，当前不会向该地址发送请求。字符串地址校验不代表
+              DNS 或公网连通性已经验证。
+            </p>
+          )}
           <div className="provider-settings-actions">
             <button type="button" disabled={busy} onClick={reloadSettings}>
               重新加载设置

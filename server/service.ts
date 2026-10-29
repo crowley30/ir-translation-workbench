@@ -450,6 +450,7 @@ export class TaskService {
       style: style as Style,
       status: 'draft',
       mode: this.adapter.mode,
+      ...(this.adapter.identity ? { provider: { ...this.adapter.identity } } : {}),
       createdAt: now,
       updatedAt: now,
       professional: this.initialProfessional(body as Record<string, unknown>),
@@ -517,6 +518,7 @@ export class TaskService {
       style: style as Style,
       status: 'draft',
       mode: this.adapter.mode,
+      ...(this.adapter.identity ? { provider: { ...this.adapter.identity } } : {}),
       createdAt: now,
       updatedAt: now,
       document,
@@ -580,6 +582,16 @@ export class TaskService {
         409,
         '该任务的服务模式与当前配置不同，请新建任务以避免混用模拟内容。',
         'MODE_MISMATCH',
+      );
+    if (
+      this.adapter.identity &&
+      (task.provider?.provider !== this.adapter.identity.provider ||
+        task.provider?.model !== this.adapter.identity.model)
+    )
+      throw new ApiError(
+        409,
+        '任务的模型与当前服务不同，请新建任务避免混用模型。',
+        'MODEL_MISMATCH',
       );
     const request = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
     const scenario = request.scenario ?? 'normal';
@@ -660,6 +672,7 @@ export class TaskService {
     input: Parameters<TranslationAdapter['translate']>[0],
     signal: AbortSignal,
   ): Promise<string> {
+    let retryAfterMs = 0;
     for (let attempt = 0; attempt < 3; attempt++) {
       if (signal.aborted) throw new ProviderError('CANCELLED', false, '操作已取消。');
       const attemptController = new AbortController();
@@ -702,11 +715,15 @@ export class TaskService {
             ? error
             : new ProviderError('PROVIDER_ERROR', true, '翻译服务暂时不可用，请重试。');
         if (!safe.retryable || attempt === 2) throw safe;
+        retryAfterMs =
+          'retryAfterMs' in safe && typeof safe.retryAfterMs === 'number' ? safe.retryAfterMs : 0;
+        if (!Number.isFinite(retryAfterMs) || retryAfterMs < 0 || retryAfterMs > 2000)
+          throw new ProviderError('RETRY_AFTER_LIMIT', false);
       } finally {
         if (timer) clearTimeout(timer);
         signal.removeEventListener('abort', abort);
       }
-      await wait(120 * (attempt + 1), signal);
+      await wait(Math.max(retryAfterMs, 120 * (attempt + 1)), signal);
     }
     throw new ProviderError('PROVIDER_ERROR', true, '翻译服务暂时不可用，请重试。');
   }
@@ -726,6 +743,7 @@ export class TaskService {
         try {
           const translation = await this.callWithRetry(
             {
+              paragraphId: p.id,
               source: p.source,
               style: task.style,
               paragraphIndex: index,

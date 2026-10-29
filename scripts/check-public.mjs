@@ -15,7 +15,7 @@ const patterns = [
   /\bsk-(?:proj-)?[A-Za-z0-9_-]{24,}\b/,
 ];
 const serverPatterns =
-  /TRANSLATION_API_KEY|TRANSLATION_API_URL|ALLOW_REAL_TRANSLATION|Authorization:|Bearer /;
+  /OPENAI_API_KEY|TRANSLATION_API_KEY|TRANSLATION_API_URL|ALLOW_REAL_TRANSLATION|TRANSLATION_MAX_BUDGET_USD|Authorization:|Bearer /;
 const maxBytes = 10 * 1024 * 1024;
 const counts = { head: 0, index: 0, worktree: 0, history: 0, commits: 0, clientBuild: 0 };
 const problems = [];

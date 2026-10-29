@@ -8,6 +8,7 @@ import TerminologyManager from './TerminologyManager';
 import TaskProfessional from './TaskProfessional';
 import ParagraphReview from './ParagraphReview';
 import ProviderSettings from './ProviderSettings';
+import LiveProvider from './LiveProvider';
 import { PROFESSIONAL_LIMITS } from '../shared/professional';
 import './professional.css';
 
@@ -813,6 +814,7 @@ export default function App() {
           )}
           <TerminologyManager disabled={posting || creating || docxBusy} />
           <ProviderSettings disabled={posting || creating || docxBusy} />
+          <LiveProvider disabled={posting || creating || docxBusy} />
           {config?.mode === 'mock' && (
             <details className="dev-panel">
               <summary>模拟测试设置</summary>

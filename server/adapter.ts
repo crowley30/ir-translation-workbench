@@ -3,6 +3,7 @@ import type { TranslationContext } from '../shared/professional.js';
 import { validatePublicProviderUrl } from './provider-settings.js';
 
 export interface TranslationInput {
+  paragraphId?: string;
   source: string;
   style: Style;
   paragraphIndex: number;
@@ -14,6 +15,7 @@ export interface TranslationAdapter {
   mode: 'mock' | 'real';
   ready: boolean;
   label: string;
+  identity?: { provider: 'openai-responses'; model: string };
   translate(input: TranslationInput, signal: AbortSignal): Promise<string>;
 }
 
@@ -47,7 +49,33 @@ export function safeProviderMessage(code: string): string {
     case 'NOT_CONFIGURED':
       return '真实翻译服务尚未完整配置或未显式启用。';
     case 'REAL_CALLS_DISABLED':
-      return '真实服务配置尚未验证；本轮仅保留离线接口，真实调用关闭。';
+      return '真实调用尚未显式启用；请检查服务端门禁与累计预算。';
+    case 'BUDGET_EXHAUSTED':
+    case 'BUDGET_NOT_ARMED':
+    case 'BUDGET_UNAVAILABLE':
+    case 'BUDGET_OVERRUN':
+    case 'BUDGET_HISTORY_LIMIT':
+    case 'INVALID_BUDGET_USAGE':
+    case 'USAGE_LIMIT_EXCEEDED':
+      return '累计预算不足、未启动或记录不可用，本段未发送；未知用量不会自动退款。';
+    case 'AUTHENTICATION_FAILED':
+      return '服务端凭据无效或已失效，本次不自动重试，请在安全入口检查。';
+    case 'MODEL_UNAVAILABLE':
+    case 'ACCESS_DENIED':
+      return '当前模型不存在或账户无权使用，本次不自动重试。';
+    case 'UNSAFE_PROVIDER':
+      return '服务目的地或安全连接验证未通过，请检查运行环境。';
+    case 'PROVIDER_FAILED':
+      return '服务未返回完整成功响应，本段未应用结果。';
+    case 'QUOTA_EXHAUSTED':
+      return '服务账户额度或费用上限不足，本次不自动重试。';
+    case 'INVALID_TRANSLATION_INPUT':
+      return '本段来源或稳定标识无效，请重新创建任务。';
+    case 'PROVIDER_INPUT_LIMIT':
+    case 'INPUT_LIMIT':
+      return '本段连同上下文超过真实请求大小上限，请缩小输入后重试。';
+    case 'RETRY_AFTER_LIMIT':
+      return '服务要求较长等待，本次已停止自动重试，请稍后手动重试。';
     case 'CANCELLED':
       return '翻译已取消。';
     default:
