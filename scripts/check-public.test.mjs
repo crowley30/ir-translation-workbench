@@ -97,6 +97,19 @@ test('client build still requires separation from provider config and credential
   });
 });
 
+test('client build rejects OpenAI credential and operator variable references', () => {
+  for (const name of ['OPENAI_API_KEY', 'TRANSLATION_MAX_BUDGET_USD'])
+    fixture(({ directory, scan }) => {
+      writeFileSync(
+        join(directory, 'dist', 'app.js'),
+        `const synthetic = ${JSON.stringify(name)};`,
+      );
+      const result = scan();
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /server configuration or authentication code in client build/);
+    });
+});
+
 test('missing build or invalid base never reports success', () => {
   fixture(({ directory, scan }) => {
     const badBase = scan('--base', 'not-a-real-ref');

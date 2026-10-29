@@ -22,7 +22,7 @@ export interface ProviderSettingsStore {
 }
 
 const STORE_KEY = 'provider-settings-v1';
-const CREDENTIAL_REF = /^(?:TRANSLATION_API_KEY|IR_TRANSLATION_[A-Z0-9_]+_KEY)$/;
+const CREDENTIAL_REF = /^(?:OPENAI_API_KEY|TRANSLATION_API_KEY|IR_TRANSLATION_[A-Z0-9_]+_KEY)$/;
 const SECRET_PATTERN =
   /-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-(?:proj-)?[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}|AKIA[0-9A-Z]{16})\b/;
 const PRIVATE_SUFFIXES = [
@@ -128,7 +128,7 @@ const DEFAULT_CONFIG: ProviderSettingsConfig = {
 function configFrom(value: Record<string, unknown>): ProviderSettingsConfig {
   if (
     !['mock', 'custom'].includes(value.mode as string) ||
-    value.protocol !== 'openai-compatible' ||
+    !['openai-compatible', 'openai-responses'].includes(value.protocol as string) ||
     typeof value.baseUrl !== 'string' ||
     typeof value.model !== 'string' ||
     typeof value.credentialRef !== 'string'
@@ -162,21 +162,36 @@ function configFrom(value: Record<string, unknown>): ProviderSettingsConfig {
   }
   return {
     mode: value.mode as ProviderSettingsConfig['mode'],
-    protocol: 'openai-compatible',
-    baseUrl: value.baseUrl ? validatePublicProviderUrl(value.baseUrl) : '',
+    protocol: value.protocol as ProviderSettingsConfig['protocol'],
+    baseUrl:
+      value.protocol === 'openai-responses'
+        ? validateOfficialBase(value.baseUrl)
+        : value.baseUrl
+          ? validatePublicProviderUrl(value.baseUrl)
+          : '',
     model: value.model,
     credentialRef: value.credentialRef,
   };
 }
 
-interface StoredSettings {
+function validateOfficialBase(value: string): string {
+  if (value && value !== 'https://api.openai.com/v1' && value !== 'https://api.openai.com/v1/')
+    throw new ProviderSettingsError(
+      400,
+      'OFFICIAL_ENDPOINT_REQUIRED',
+      'OpenAI 官方协议仅允许固定官方地址；自定义服务请保留为离线协议。',
+    );
+  return 'https://api.openai.com/v1';
+}
+
+export interface StoredSettings {
   version: 1;
   revision: number;
   updatedAt: string | null;
   config: ProviderSettingsConfig;
 }
 
-function read(store: ProviderSettingsStore): StoredSettings {
+export function readProviderConfiguration(store: ProviderSettingsStore): StoredSettings {
   const value = store.getSetting(STORE_KEY);
   if (value === undefined || value === null)
     return { version: 1, revision: 0, updatedAt: null, config: { ...DEFAULT_CONFIG } };
@@ -221,6 +236,7 @@ function summary(value: StoredSettings, env: NodeJS.ProcessEnv): ProviderSetting
           : 'unconfigured',
     credentialStatus: present ? 'present' : 'absent',
     realCallsEnabled: false,
+    recommendedCredentialRef: 'OPENAI_API_KEY',
     connectionTestAvailable: false,
     urlValidation: 'syntax-only-no-dns',
   };
@@ -229,13 +245,19 @@ function summary(value: StoredSettings, env: NodeJS.ProcessEnv): ProviderSetting
 export function createProviderSettingsRouter(
   store: ProviderSettingsStore,
   env: NodeJS.ProcessEnv = process.env,
+  hooks?: { beforeSave(): void; enabled(): boolean },
 ): Router {
   const router = Router();
   router.use((_req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     next();
   });
-  router.get('/', (_req, res) => res.json(summary(read(store), env)));
+  router.get('/', (_req, res) =>
+    res.json({
+      ...summary(readProviderConfiguration(store), env),
+      realCallsEnabled: hooks?.enabled() ?? false,
+    }),
+  );
   router.put('/', (req, res) => {
     const input: unknown = req.body;
     const keys = ['mode', 'protocol', 'baseUrl', 'model', 'credentialRef', 'expectedRevision'];
@@ -246,7 +268,7 @@ export function createProviderSettingsRouter(
         '仅允许非敏感设置字段，不能提交密钥、令牌或额外字段。',
       );
     }
-    const current = read(store);
+    const current = readProviderConfiguration(store);
     if (
       !Number.isSafeInteger(input.expectedRevision) ||
       input.expectedRevision !== current.revision
@@ -257,6 +279,7 @@ export function createProviderSettingsRouter(
         '设置已更新或版本无效，请重新加载后再保存。',
       );
     }
+    hooks?.beforeSave();
     const config = configFrom(input);
     const saved: StoredSettings = {
       version: 1,
@@ -265,7 +288,7 @@ export function createProviderSettingsRouter(
       config,
     };
     store.setSetting(STORE_KEY, saved);
-    res.json(summary(saved, env));
+    res.json({ ...summary(saved, env), realCallsEnabled: hooks?.enabled() ?? false });
   });
   router.use(
     (

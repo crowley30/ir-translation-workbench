@@ -23,6 +23,7 @@ export interface Task {
   style: Style;
   status: TaskStatus;
   mode: 'mock' | 'real';
+  provider?: { provider: 'openai-responses'; model: string };
   createdAt: string;
   updatedAt: string;
   paragraphs: Paragraph[];

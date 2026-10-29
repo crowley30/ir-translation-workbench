@@ -8,6 +8,12 @@ import { DOCX_LIMITS } from '../shared/docx.js';
 import { DocxError, parseDocx } from './docx/parse.js';
 import { ExportError, exportDocx } from './docx/export.js';
 import { createProviderSettingsRouter } from './provider-settings.js';
+import {
+  createLiveProviderRouter,
+  LiveProviderError,
+  type LiveProviderRuntime,
+} from './live-provider.js';
+import { BudgetError } from './openai-budget.js';
 import { TermValidationError } from './terminology.js';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -41,7 +47,11 @@ function attachmentFilename(filename: string, mode: 'chinese' | 'bilingual'): st
   return `attachment; filename="ir-translation-${mode}.docx"; filename*=UTF-8''${encoded}`;
 }
 
-export function createApp(service: TaskService, extraOrigin?: string) {
+export function createApp(
+  service: TaskService,
+  extraOrigin?: string,
+  runtime?: LiveProviderRuntime,
+) {
   const app = express();
   app.disable('x-powered-by');
   app.use((_req, res, next) => {
@@ -96,7 +106,17 @@ export function createApp(service: TaskService, extraOrigin?: string) {
     },
   );
   app.use(express.json({ limit: '256kb' }));
-  app.use('/api/provider-settings', createProviderSettingsRouter(service.store));
+  app.use(
+    '/api/provider-settings',
+    createProviderSettingsRouter(
+      service.store,
+      runtime?.environment,
+      runtime
+        ? { beforeSave: () => runtime.beforeSave(), enabled: () => runtime.status().ready }
+        : undefined,
+    ),
+  );
+  if (runtime) app.use('/api/live-provider', createLiveProviderRouter(runtime, service));
   app.get('/api/config', (_req, res) =>
     res.json({
       mode: service.adapter.mode,
@@ -162,6 +182,8 @@ export function createApp(service: TaskService, extraOrigin?: string) {
     void next; // Keep Express error middleware arity without reflecting internal errors.
     if (
       error instanceof ApiError ||
+      error instanceof LiveProviderError ||
+      error instanceof BudgetError ||
       error instanceof DocxError ||
       error instanceof ExportError ||
       error instanceof TermValidationError

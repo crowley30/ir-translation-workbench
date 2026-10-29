@@ -1,0 +1,61 @@
+# OpenAI 第一阶段验收矩阵
+
+基线：中性命名 PR #2 的 `dc0fc9c5469b9bceb3e0f2a11aaac5d6943a9d49`。本阶段使用独立 `feat/openai-provider` 分支，并以尚未合并的 PR #2 为依赖；不合并或部署。本矩阵列出已编写测试的实际位置，完整合成回归已实际执行通过；结果和原始命令输出见 [执行证据](openai-verification.md)。此处通过仅指离线流程，不等于真实供应商或质量通过。
+
+首次后续真实试跑的累计预算已确认为 **1 美元，包含全部请求和重试**；此确认不授权本阶段配置真实密钥、测试连接或发送计费请求。应用使用操作员上限与持久化累计账本，不将所有未来使用永久限定为 1 美元，也不依赖赠金或到期邮件作为费用保证。协议、模型、价格和 Cloud 密钥说明见 [官方核对依据](openai-official-reference.md)，实现边界见 [阶段计划](openai-phase1-plan.md)。
+
+## 合成验证的范围
+
+| ID    | 待验收行为                                                                                            | 实际测试位置与关键用例                                                                                                                                                                                                                                                                                                                                                         | 本轮完整运行结果 |
+| ----- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| OA-01 | 默认 mock、操作员上限默认为 0；页面加载、读取/保存配置、创建草稿与启用控制均不自动调用供应商          | `server/openai-budget.test.ts`：`defaults the operator cap to zero and never arms implicitly`；`server/live-provider.test.ts`：`loads, saves, creates a draft and arms without sending a provider request or exposing a key`；`tests/openai.spec.ts`：`OpenAI model settings save without activating a provider and the default real-call gate stays closed`                   | 通过（离线）     |
+| OA-02 | 支持的模型和固定官方端点方可启动；未知定价、自定义兼容端点和缺失条件不能启用真实传输                  | `server/live-provider.test.ts`：`unknown model prices and compatible custom endpoints cannot enable live transport` 及启动门禁参数化用例；`server/openai-adapter.test.ts`：构造参数、模型和预算校验；`server/openai-transport.test.ts`：固定官方端点参数化拒绝                                                                                                                 | 通过（离线）     |
+| OA-03 | 服务端凭据仅作环境变量引用；响应不包含密钥；设置与启动控制受同源/JSON 约束                            | `server/live-provider.test.ts`：无请求/无密钥回显用例、`same-origin and JSON mutation guards also protect live control endpoints`；`server/openai-adapter.test.ts`：`never exposes provider or raw error text in returned errors`；`tests/openai.spec.ts`：无密码框及保存后恢复检查                                                                                            | 通过（离线）     |
+| OA-04 | 显式费用与数据发送确认；重复点击不能重复启动；配置版本和已启用状态不能借重启预算切换                  | `server/openai-budget.test.ts`：`requires actual boolean acknowledgment and a budget within the server cap`；`server/live-provider.test.ts`：`duplicate activation and editing active settings cannot reset or switch a budget`；`tests/openai.spec.ts`：`synthetic live control requires both consents and sends one bounded start after repeated clicks`                     | 通过（离线）     |
+| OA-05 | 数字金额解析不使用浮点猜测；输入/最大输出和每次尝试预留有限，序列化上下文超限前不发送                 | `server/openai-budget.test.ts`：`exact conservative USD arithmetic`；`server/openai-adapter.test.ts`：`bounds serialized prompt/context size before any reservation or transport`、`reserves UTF-8 bytes of the full serialized request plus protocol allowance, and maximum output`；`tests/openai.spec.ts`：非法累计预算与输出 token 上限                                    | 通过（离线）     |
+| OA-06 | 串行/并发/重试共享累计额度；发送前持久化预留，额度不足或落盘失败均不发送                              | `server/openai-budget.test.ts`：`parallel promise callers cannot oversubscribe the shared synchronous store`、`never returns permission to send after a failed persistence write`；`server/live-provider.test.ts`：`insufficient budget blocks sending and cannot be bypassed by manual retry`、`budget insufficiency stops retries after an uncertain charged-shaped attempt` | 通过（离线）     |
+| OA-07 | 可信用量才释放已证实未使用的预留；未知、取消、失败和重启保持不确定费用；超支停止后续请求              | `server/openai-budget.test.ts`：`usage reconciliation is conservative and immutable`、`keeps spent/pending/unknown reservations across an actual SQLite close and reopen`、`fails closed on corrupt stored state and never silently starts a fresh budget`；`server/live-provider.test.ts`：`restart disarms and rearming preserves both spent and uncertain reservations`     | 通过（离线）     |
+| OA-08 | 文体、数字/币种/日期保护、项目/必要上下文、已解析术语和稳定段落 ID 进入 strict Responses 契约         | `server/openai-adapter.test.ts`：`preserves stable ID, style, numeric and term guidance and sends bounded strict Responses fields`；`server/live-provider.test.ts`：`sends stable paragraph IDs/context/terms, preserves numerical equivalents and never marks human approval`                                                                                                 | 通过（离线）     |
+| OA-09 | 仅完整响应可应用；错误/重复/缺失 ID、额外内容、拒绝、截断、工具输出或不支持状态不能因 JSON 合法而成功 | `server/openai-adapter.test.ts`：`terminal completion and exact paragraph mapping` 参数化组；`server/live-provider.test.ts`：`prevents a wrong returned paragraph ID from completing or applying a result`                                                                                                                                                                     | 通过（离线）     |
+| OA-10 | 429 计费/额度耗尽不盲目重试；真正限流与 5xx 有限退避，遵守有效 Retry-After；每次尝试均计入预留        | `server/openai-adapter.test.ts`：`usage reconciliation and finite retry classification`、`recognizes quota in error.type as well as code`、`honors a bounded HTTP-date Retry-After without a connection test`；`server/live-provider.test.ts`：429/503 有限失败参数化用例                                                                                                      | 通过（离线）     |
+| OA-11 | DNS、连接、响应头和正文均受超时约束；已取消调用不做 DNS/发送，晚到结果不复活；原始错误内容不外泄      | `server/openai-transport.test.ts`：`request/response limits, deadlines and cancellation`；`server/openai-adapter.test.ts`：取消/未知费用及安全错误用例；`server/live-provider.test.ts`：`timeouts abort each fake transport, bound retries and preserve unknown usage`                                                                                                         | 通过（离线）     |
+| OA-12 | 固定官方 HTTPS 目的地址；全部 DNS 结果须安全，固定连接地址并保留 TLS/SNI，拒绝重定向和 DNS rebinding  | `server/openai-transport.test.ts`：`conservative OpenAI public-unicast destination validation`、`only constructs requests on explicit invocation, pins lookup and keeps TLS hostname checks`、`re-resolves and validates every separate connection; a later DNS rebinding never sends a request`、301/302/303/307/308 参数化拒绝                                               | 通过（离线）     |
+| OA-13 | 同时运行限制、停止/切换 mock、任务及模型来源隔离；取消后不继续发送，已有费用不清零                    | `server/live-provider.test.ts`：`rejects duplicate run requests and prevents activating live while a mock run is pending`、stop/mock 参数化组、`does not mix mock tasks or tasks from another saved model into a live run`；`tests/openai.spec.ts`：`synthetic stop and mock transitions retain cumulative spent and unknown reservation totals`                               | 通过（离线）     |
+| OA-14 | 发送中的人工保存有版本保护，其他段落人工修改不被覆盖；模型成功不自动生成人工确认                      | `server/live-provider.test.ts`：`preserves edits saved during a pending fake request and leaves other manual paragraphs untouched`、稳定 ID/指导用例；旧 `server/service.test.ts`、`tests/workbench.spec.ts` 的并发编辑及局部重译回归                                                                                                                                          | 通过（离线）     |
+| OA-15 | 真实形状的假译文仍经过数值/术语复核，不保证专业正确；提示定位与人工复核流程保留                       | `server/live-provider.test.ts`：`keeps visible numeric and terminology findings from live-shaped fake output for user review`；旧 `server/review.test.ts`、`server/professional-api.test.ts`、`tests/professional.spec.ts`                                                                                                                                                     | 通过（离线）     |
+| OA-16 | 文本及 DOCX 都使用新 adapter；简单表格保持稳定单元格映射，导出仅包含最新保存译文，不含辅助上下文      | `server/live-provider.test.ts`：`Responses translation through persisted text and DOCX workflows`、`translates a simple DOCX table with stable cell mapping and exports latest saved text without auxiliary context`；旧 `server/docx/*.test.ts`、`tests/docx.spec.ts`                                                                                                         | 通过（离线）     |
+| OA-17 | 启用失败保留预算草稿，重试由用户触发；非法费用/输出限额在发送启动请求前拒绝                           | `tests/openai.spec.ts`：`synthetic start failure preserves the explicit budget draft and a retry is user initiated`、`synthetic live control rejects invalid cumulative amounts and output limits before a start request`                                                                                                                                                      | 通过（离线）     |
+
+传输测试以注入的 DNS/native HTTPS 假对象检查连接参数与流生命周期，不访问真实目的地址。跨 API 测试通过真实路由、服务与 SQLite，注入 fake transport。新增五项浏览器用例检查真实设置页默认关闭状态及拦截后的合成启停控制，不代表浏览器已连接真实 OpenAI；文本/DOCX 的新 provider 翻译路径由跨 API 假服务用例覆盖。
+
+## 完整执行登记
+
+以下为当前测试文件对应的目标数量，供核对是否实际完整运行；最终以主执行者保存的命令、退出码和测试报告为准。不得将目标数抄为已通过结果。
+
+| 检查                 | 文件/命令                                | 目标范围                                                         | 实际结果、退出码与证据 |
+| -------------------- | ---------------------------------------- | ---------------------------------------------------------------- | ---------------------- |
+| 新 Responses adapter | `server/openai-adapter.test.ts`          | 100 项合成契约用例                                               | 通过（离线）           |
+| 新安全传输           | `server/openai-transport.test.ts`        | 84 项注入传输用例                                                | 通过（离线）           |
+| 新累计费用账本       | `server/openai-budget.test.ts`           | 72 项费用/持久化用例                                             | 通过（离线）           |
+| 新跨 API 流程        | `server/live-provider.test.ts`           | 31 项 text/DOCX/启停用例                                         | 通过（离线）           |
+| 完整单元/集成回归    | `npm test`                               | 旧 597 + 新 287 = 884 项 Vitest；公开检查脚本 10 项              | 通过（离线）           |
+| 完整 Chromium        | `npm run test:e2e`                       | 旧 50 + 新 5 = 55 项；不自动重试                                 | 通过（离线）           |
+| 格式                 | `npm run format:check`                   | 当前全部适用受控文件                                             | 通过（离线）           |
+| 静态检查             | `npm run lint`、`npm run typecheck`      | 当前完整仓库                                                     | 通过（离线）           |
+| 构建                 | `npm run build`                          | 客户端构建，检查无服务端密钥/认证配置泄漏                        | 通过（离线）           |
+| 公开内容扫描         | `npm run check:public -- --base a44ecb2` | 完整 HEAD/index/工作文件、逐提交历史快照与非空构建；记录实际计数 | 通过（离线）           |
+| 人工内容与界面检查   | 受审差异、合成截图/证据、当前品牌文案    | 无真实用户材料/凭据/临时运行产物，品牌不回退                     | 通过（离线）           |
+
+重 ZIP 资源用例应继续串行运行，避免与完整浏览器争用导致误判；不以放宽期限或删减断言掩盖失败。失败、修正及后续重跑分别记录，不只保留最后一次成功。
+
+## 明确未运行的门禁
+
+| 项目                                                                             | 本阶段状态 | 后续所需条件                                                                     |
+| -------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------- |
+| 真实 OpenAI 认证、模型权限、DNS/TLS 连通、供应商完整响应与真实扣费               | **未运行** | 用户安全配置凭据；再次明确试跑授权；累计 1 美元的首次试跑计划及实际余额/费率复核 |
+| 当前 Cloud HTTP network secret 的 placeholder/HTTPS 代理替换与本实现传输的兼容性 | **未运行** | 独立验证受支持的代理路径；不能仅凭本地 env 假值或文档推断已可用                  |
+| 真实专业 IR/合同翻译质量、术语质量及真实模型数值保持                             | **未运行** | 获批真实合成评测及人工专业审阅；不凭 mock/fake 结果给质量分                      |
+| Microsoft Word 实际打开、编辑、保存及兼容性                                      | **未运行** | 实际 Word 人工试用；既有 OOXML/替代渲染证据不替代此门禁                          |
+| 部署、外部访问、合并或 release                                                   | **未运行** | 父任务验收及后续单独授权；本轮仅 Draft PR                                        |
+
+数值/术语提示仍是可解释复核辅助，不是无错误证明。费用预留覆盖已知条件下的每次尝试，但价格快照、未知远端状态与供应商计费不能被描述为绝对账单保证。停止/取消会阻止后续本地工作，不承诺已到达供应商的请求未执行或不收费。
