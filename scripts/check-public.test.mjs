@@ -98,7 +98,13 @@ test('client build still requires separation from provider config and credential
 });
 
 test('client build rejects OpenAI credential and operator variable references', () => {
-  for (const name of ['OPENAI_API_KEY', 'TRANSLATION_MAX_BUDGET_USD'])
+  for (const name of [
+    'OPENAI_API_KEY',
+    'TRANSLATION_MAX_BUDGET_USD',
+    'TRANSLATION_TRANSPORT',
+    'HTTPS_PROXY',
+    'SSL_CERT_FILE',
+  ])
     fixture(({ directory, scan }) => {
       writeFileSync(
         join(directory, 'dist', 'app.js'),

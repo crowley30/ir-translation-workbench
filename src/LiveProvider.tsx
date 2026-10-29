@@ -9,6 +9,11 @@ const MODE_LABEL: Record<LiveProviderStatus['mode'], string> = {
   'real-disabled': '真实调用已关闭',
   live: '真实调用已启用',
 };
+const TRANSPORT_LABEL = {
+  direct: '服务端直连',
+  'cloud-proxy': 'Cloud 受控代理',
+  unconfigured: '传输尚未配置',
+};
 function money(micros: number): string {
   return `$${(micros / 1_000_000).toFixed(6)}`;
 }
@@ -20,6 +25,21 @@ function budgetAmount(value: string): number | null {
 }
 function validStatus(value: LiveProviderStatus): boolean {
   if (!value || !['mock', 'real-disabled', 'live'].includes(value.mode) || !value.budget)
+    return false;
+  const transport = value.transport;
+  if (
+    transport &&
+    (!['direct', 'cloud-proxy', 'unconfigured'].includes(transport.mode) ||
+      typeof transport.ready !== 'boolean' ||
+      typeof transport.reason !== 'string' ||
+      transport.upstreamDns !==
+        (transport.mode === 'direct'
+          ? 'client-pinned'
+          : transport.mode === 'cloud-proxy'
+            ? 'managed-proxy'
+            : 'unavailable') ||
+      (transport.mode === 'unconfigured' && transport.ready))
+  )
     return false;
   const amounts = [
     value.settingsRevision,
@@ -132,6 +152,7 @@ export default function LiveProvider({ disabled = false, onStatusChange, onEmerg
     status.operatorEnabled &&
     status.credentialStatus === 'present' &&
     status.provider === 'openai-responses' &&
+    status.transport?.ready !== false &&
     !!model &&
     !status.budget.overrun &&
     (!existingLimit || status.budget.remainingMicros > 0) &&
@@ -249,6 +270,20 @@ export default function LiveProvider({ disabled = false, onStatusChange, onEmerg
               </span>
               <small>{status.reason}</small>
             </div>
+            {status.transport && (
+              <section aria-label="服务端传输状态" className="provider-settings-explainer">
+                <strong>{TRANSPORT_LABEL[status.transport.mode]}</strong>
+                <p>{status.transport.reason}</p>
+                <p>
+                  {status.transport.upstreamDns === 'client-pinned'
+                    ? '应用校验全部 DNS 结果并固定连接地址，继续验证官方 TLS 主机名。'
+                    : status.transport.upstreamDns === 'managed-proxy'
+                      ? '平台代理解析上游，非客户端上游 IP 固定。客户端仍验证 TLS 证书链和官方主机名；平台代理的上游解析与允许域属于外部信任边界。'
+                      : '传输配置尚未就绪，真实调用被阻止；不会自动回退直连。'}
+                </p>
+                <p>仅显示服务端状态；这里没有代理地址或证书输入，不执行连接测试。</p>
+              </section>
+            )}
             <dl className="live-budget" aria-label="累计预算状态">
               <div>
                 <dt>操作员累计上限</dt>

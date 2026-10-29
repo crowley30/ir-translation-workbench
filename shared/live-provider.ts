@@ -7,6 +7,12 @@ export interface LiveBudgetSummary {
   operatorCapMicros: number;
   overrun: boolean;
 }
+export interface ProviderTransportStatus {
+  mode: 'direct' | 'cloud-proxy' | 'unconfigured';
+  ready: boolean;
+  reason: string;
+  upstreamDns: 'client-pinned' | 'managed-proxy' | 'unavailable';
+}
 export interface LiveProviderStatus {
   mode: 'mock' | 'real-disabled' | 'live';
   ready: boolean;
@@ -18,6 +24,7 @@ export interface LiveProviderStatus {
   operatorEnabled: boolean;
   credentialStatus: 'present' | 'absent';
   budget: LiveBudgetSummary;
+  transport?: ProviderTransportStatus;
 }
 // POST /api/live-provider/start: explicit user consent, no provider request.
 export interface StartLiveProvider {

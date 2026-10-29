@@ -2,7 +2,7 @@
 
 面向科技基金 IR 的单人中文网页工具，桌面优先。支持英文粘贴，以及有边界的 DOCX 上传预检查、逐段审阅、人工编辑保存和中文/中英双语 DOCX 基础导出。
 
-**默认是模拟模式：输出明确标注的占位内容，不是实际翻译。** 文本、有限 DOCX、术语和复核流程保留；本轮新增 OpenAI Responses 服务端接入与显式调用门禁，只以合成 fake transport 验收。未配置真实凭据、未调用收费 API，真实连通性和专业质量仍待独立验收。
+**默认是模拟模式：输出明确标注的占位内容，不是实际翻译。** 文本、有限 DOCX、术语和复核流程保留；本轮在 OpenAI Responses 与显式调用门禁基础上增加 Cloud 代理传输，只以合成服务和本地 TLS 代理验收。未配置真实凭据、未调用收费 API，真实连通性和专业质量仍待独立验收。
 
 ## 运行
 
@@ -62,7 +62,7 @@ DOCX 请先选择 `.docx` 并点击「上传并预检查」。报告展示正文
 
 「真实调用控制」独立于设置保存。服务启动、页面读取、保存设置及明确启用都不连接供应商，只有任务的翻译动作可能发送请求。默认真实开关关闭、操作员预算为 0。未来独立验收并配置服务端凭据后，还须同时满足操作员 `ALLOW_REAL_TRANSLATION=true`、非零 `TRANSLATION_MAX_BUDGET_USD`、官方协议/已定价模型、明确预算与数据传输确认，才能开始真实任务。关闭浏览器不等于停止服务端调用，请使用停止按钮；停止或切回 mock 会取消运行任务，已有真实任务不能混入模拟或另一模型的结果。
 
-服务端只读取凭据引用所指的环境变量，不在网页接收密钥、不回显值或写入数据库/localStorage/日志/仓库。当前 Cloud 安全入口与其代理兼容性限制，以及自托管服务端最小配置路径见 [第一阶段计划](docs/openai-phase1-plan.md)。本轮没有配置真实秘密；不要将密钥粘贴进聊天、网页或 `.env.example`。当前传输只支持固定官方 HTTPS 目的地，验证 DNS 全部地址、固定连接 IP、校验 TLS/SNI、拒绝重定向；Cloud 网络密钥代理的实际兼容性仍需单独验收。
+服务端只读取凭据引用所指的环境变量，不在网页接收密钥、不回显值或写入数据库/localStorage/日志/仓库。当前 Cloud 的 Network secret 与直接运行时变量入口、安全配置步骤和信任边界见 [代理阶段计划](docs/cloud-proxy-plan.md)；原 [第一阶段计划](docs/openai-phase1-plan.md) 是历史基线。本轮没有配置真实秘密；不要将密钥粘贴进聊天、网页或 `.env.example`。目标仍固定为官方 HTTPS 服务。服务端 `TRANSLATION_TRANSPORT=direct` 保留全部 DNS 结果校验和连接 IP 固定；`cloud-proxy` 使用平台实际提供的 HTTPS 代理配置，保留主机名、TLS/SNI 验证，禁止 `NO_PROXY` 绕过、重定向和直连回退。代理模式由平台代理解析上游，不声明客户端到上游 IP pinning；允许域、上游解析和网络密钥替换属于平台代理信任边界，实际行为尚未联调。存在 HTTPS 代理配置而未明确选择模式时，真实传输保持未配置，mock 仍可用。
 
 每段请求携带稳定 ID、文体与任务术语/必要上下文；严格 JSON schema 之外仍核对完成状态、数量、ID 与非空译文。截断、拒绝、异常结构不能落盘成功。数字/术语提示和人工确认沿用现有流程，模型成功不会自动确认专业质量。
 
@@ -102,5 +102,6 @@ Playwright 优先使用系统 `/usr/bin/chromium`，否则先运行 `npx playwri
 - [OpenAI 第一阶段任务与门禁](docs/openai-phase1-plan.md) · [官方协议/模型依据](docs/openai-official-reference.md) · [本轮实际检查](docs/openai-verification.md)
 - [PR3 独立验收返工与完整回归](docs/openai-rework-verification.md)
 - [PR3 凭据头编码返工](docs/openai-credential-verification.md)
+- [Cloud 代理阶段计划](docs/cloud-proxy-plan.md) · [官方依据与安全入口](docs/cloud-proxy-reference.md) · [代理实际验证](docs/cloud-proxy-verification.md)
 
 仓库的样本、截图及渲染均为合成内容，禁止加入真实邮件、基金材料或凭据。旧的一句话 Codex skill 按用户要求未用作规范。
