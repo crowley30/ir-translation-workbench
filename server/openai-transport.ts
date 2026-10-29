@@ -1,3 +1,4 @@
+import { isValidBearerCredential } from './credential.js';
 import { lookup as dnsLookup } from 'node:dns/promises';
 import { request as httpsRequest, type RequestOptions } from 'node:https';
 import { isIP, type LookupFunction } from 'node:net';
@@ -142,14 +143,7 @@ export function createOpenAITransport(
       return Promise.reject(new OpenAITransportError('INVALID_ENDPOINT'));
     const timeoutMs = input.timeoutMs ?? 30000;
     if (
-      typeof input.apiKey !== 'string' ||
-      !input.apiKey.trim() ||
-      input.apiKey.length > 1024 ||
-      /\s/u.test(input.apiKey) ||
-      Array.from(input.apiKey).some((character) => {
-        const code = character.charCodeAt(0);
-        return code < 32 || code === 127;
-      }) ||
+      !isValidBearerCredential(input.apiKey) ||
       typeof input.body !== 'string' ||
       !input.body ||
       Buffer.byteLength(input.body, 'utf8') > MAX_REQUEST_BYTES ||

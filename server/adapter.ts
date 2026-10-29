@@ -1,3 +1,4 @@
+import { isValidBearerCredential } from './credential.js';
 import type { MockScenario, Style } from '../shared/types.ts';
 import type { TranslationContext } from '../shared/professional.js';
 import { validatePublicProviderUrl } from './provider-settings.js';
@@ -150,7 +151,8 @@ export interface RealAdapterConfig {
 type FetchImplementation = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 function validRealConfig(config: RealAdapterConfig): boolean {
-  if (!config.enabled || !config.apiKey.trim() || !config.model.trim()) return false;
+  if (!config.enabled || !isValidBearerCredential(config.apiKey) || !config.model.trim())
+    return false;
   try {
     validatePublicProviderUrl(config.apiUrl);
     return true;

@@ -1,3 +1,4 @@
+import { isValidBearerCredential } from './credential.js';
 import { findOpenAIModel, OPENAI_MAX_INPUT_BYTES } from '../shared/openai-models.js';
 import { ProviderError, type TranslationAdapter, type TranslationInput } from './adapter.js';
 import { BudgetError, type OpenAIBudgetLedger } from './openai-budget.js';
@@ -250,12 +251,7 @@ export function createOpenAIAdapter(
   const model = findOpenAIModel(config.model);
   const configured =
     config.enabled &&
-    !!config.apiKey.trim() &&
-    config.apiKey.length <= 1024 &&
-    !/\s/u.test(config.apiKey) &&
-    !Array.from(config.apiKey).some(
-      (character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
-    ) &&
+    isValidBearerCredential(config.apiKey) &&
     !!model &&
     Number.isSafeInteger(config.maxOutputTokens) &&
     config.maxOutputTokens >= 64 &&

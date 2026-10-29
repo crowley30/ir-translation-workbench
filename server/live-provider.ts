@@ -1,3 +1,4 @@
+import { isValidBearerCredential } from './credential.js';
 import { Router } from 'express';
 import type { LiveProviderStatus } from '../shared/live-provider.js';
 import { findOpenAIModel, OPENAI_MODELS } from '../shared/openai-models.js';
@@ -178,13 +179,7 @@ export class LiveProviderRuntime {
       failure(400, 'INVALID_OUTPUT_LIMIT', '最大输出 token 必须为 256 至模型应用上限之间的整数。');
     const key = config.credentialRef && this.environment[config.credentialRef];
     if (!key) failure(400, 'CREDENTIAL_MISSING', '服务端凭据变量尚未设置，不能启动真实调用。');
-    if (
-      key.length > 1024 ||
-      /\s/u.test(key) ||
-      Array.from(key).some(
-        (character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
-      )
-    )
+    if (!isValidBearerCredential(key))
       failure(
         400,
         'CREDENTIAL_INVALID',

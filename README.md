@@ -101,5 +101,6 @@ Playwright 优先使用系统 `/usr/bin/chromium`，否则先运行 `npx playwri
 - [中性产品名修正与当前界面证据](docs/neutral-name-verification.md)
 - [OpenAI 第一阶段任务与门禁](docs/openai-phase1-plan.md) · [官方协议/模型依据](docs/openai-official-reference.md) · [本轮实际检查](docs/openai-verification.md)
 - [PR3 独立验收返工与完整回归](docs/openai-rework-verification.md)
+- [PR3 凭据头编码返工](docs/openai-credential-verification.md)
 
 仓库的样本、截图及渲染均为合成内容，禁止加入真实邮件、基金材料或凭据。旧的一句话 Codex skill 按用户要求未用作规范。
