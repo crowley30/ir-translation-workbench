@@ -1,11 +1,12 @@
 import { isValidBearerCredential } from './credential.js';
 import { Router } from 'express';
-import type { LiveProviderStatus } from '../shared/live-provider.js';
+import type { LiveProviderStatus, ProviderTransportStatus } from '../shared/live-provider.js';
 import { findOpenAIModel, OPENAI_MODELS } from '../shared/openai-models.js';
 import { createMockAdapter, ProviderError, type TranslationAdapter } from './adapter.js';
 import { createOpenAIAdapter } from './openai-adapter.js';
 import { BudgetError, OpenAIBudgetLedger, parseUsdToMicros } from './openai-budget.js';
-import { createOpenAITransport, type OpenAITransport } from './openai-transport.js';
+import { OpenAITransportError, type OpenAITransport } from './openai-transport.js';
+import { resolveOpenAITransportConfiguration } from './cloud-transport-config.js';
 import { readProviderConfiguration, type ProviderSettingsStore } from './provider-settings.js';
 import type { TaskService } from './service.js';
 
@@ -44,13 +45,50 @@ export class LiveProviderRuntime {
   private outputTokens = 4096;
   private stopPersistenceFailed = false;
   private readonly transport: OpenAITransport;
+  private readonly transportStatus: ProviderTransportStatus;
   constructor(
     private readonly store: ProviderSettingsStore,
     readonly environment: NodeJS.ProcessEnv = process.env,
     transport?: OpenAITransport,
     mock = createMockAdapter(),
   ) {
-    this.transport = transport ?? createOpenAITransport();
+    if (transport) {
+      this.transport = transport;
+      this.transportStatus = {
+        mode: 'direct',
+        ready: true,
+        upstreamDns: 'client-pinned',
+        reason: '注入的合成传输契约，不代表真实连接验证。',
+      };
+    } else {
+      const configuration = resolveOpenAITransportConfiguration(environment);
+      let chosen: OpenAITransport;
+      let summary: ProviderTransportStatus = {
+        mode: configuration.mode,
+        ready: configuration.ready,
+        reason: configuration.reason,
+        upstreamDns: configuration.upstreamDns,
+      };
+      try {
+        chosen = configuration.ready
+          ? configuration.createTransport()
+          : async () => {
+              throw new OpenAITransportError('INVALID_REQUEST');
+            };
+      } catch {
+        summary = {
+          mode: 'unconfigured',
+          ready: false,
+          upstreamDns: 'unavailable',
+          reason: '服务端传输配置不可用，真实调用关闭且不会回退直连。',
+        };
+        chosen = async () => {
+          throw new OpenAITransportError('INVALID_REQUEST');
+        };
+      }
+      this.transport = chosen;
+      this.transportStatus = Object.freeze(summary);
+    }
     this.ledger = new OpenAIBudgetLedger(store, {
       operatorCapMicros: operatorCap(environment),
       prices: Object.fromEntries(OPENAI_MODELS.map((model) => [model.id, model])),
@@ -92,6 +130,7 @@ export class LiveProviderRuntime {
   private isActive(): boolean {
     return (
       !!this.active &&
+      this.transportStatus.ready &&
       this.active.ready &&
       !this.stopPersistenceFailed &&
       this.environment.ALLOW_REAL_TRANSLATION === 'true' &&
@@ -113,17 +152,19 @@ export class LiveProviderRuntime {
         ? `OpenAI 真实调用已启动 · ${config.model}；仅翻译按钮发送请求，结果须人工复核。`
         : this.stopPersistenceFailed
           ? '真实调用已在本进程关闭，但停止状态未能持久化；修复存储并重新明确启动前不会发送请求。'
-          : !operatorEnabled
-            ? '服务端真实调用开关或累计预算上限尚未放行，当前不会发送真实请求。'
-            : !present
-              ? '服务端凭据变量尚未设置；请通过安全入口配置，勿粘贴密钥到网页。'
-              : config.protocol !== 'openai-responses' || config.mode !== 'custom'
-                ? '请先保存 OpenAI 官方 Responses 设置；其它协议本阶段仅保留离线配置。'
-                : !findOpenAIModel(config.model)
-                  ? '模型未列入已核对的定价目录，真实调用被阻止。'
-                  : budget.overrun
-                    ? '预算或 token 预留出现超限，真实调用已阻止，请核对费用记录。'
-                    : '真实调用尚未启动；明确确认传输与累计费用后才可开启，开启本身不测试连接。',
+          : !this.transportStatus.ready
+            ? this.transportStatus.reason
+            : !operatorEnabled
+              ? '服务端真实调用开关或累计预算上限尚未放行，当前不会发送真实请求。'
+              : !present
+                ? '服务端凭据变量尚未设置；请通过安全入口配置，勿粘贴密钥到网页。'
+                : config.protocol !== 'openai-responses' || config.mode !== 'custom'
+                  ? '请先保存 OpenAI 官方 Responses 设置；其它协议本阶段仅保留离线配置。'
+                  : !findOpenAIModel(config.model)
+                    ? '模型未列入已核对的定价目录，真实调用被阻止。'
+                    : budget.overrun
+                      ? '预算或 token 预留出现超限，真实调用已阻止，请核对费用记录。'
+                      : '真实调用尚未启动；明确确认传输与累计费用后才可开启，开启本身不测试连接。',
       settingsRevision: revision,
       provider: config.protocol === 'openai-responses' ? 'openai-responses' : 'none',
       model: config.model,
@@ -131,6 +172,7 @@ export class LiveProviderRuntime {
       operatorEnabled,
       credentialStatus: present ? 'present' : 'absent',
       budget,
+      transport: { ...this.transportStatus },
     };
   }
   start(body: unknown): LiveProviderStatus {
@@ -155,6 +197,8 @@ export class LiveProviderRuntime {
     const { config, revision } = readProviderConfiguration(this.store);
     if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision !== revision)
       failure(409, 'LIVE_SETTINGS_CONFLICT', '服务设置已变化，请重新读取后明确启动。');
+    if (!this.transportStatus.ready)
+      failure(503, 'TRANSPORT_UNAVAILABLE', this.transportStatus.reason);
     if (this.environment.ALLOW_REAL_TRANSLATION !== 'true' || operatorCap(this.environment) === 0)
       failure(403, 'LIVE_OPERATOR_GATE', '服务端尚未允许真实调用或尚未批准累计预算。');
     if (this.isActive())
